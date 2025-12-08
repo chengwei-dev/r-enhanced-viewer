@@ -1,0 +1,130 @@
+{
+  "name": "r-data-explorer",
+  "displayName": "R Data Explorer",
+  "description": "Enhanced data frame viewer for R statistical programmers in pharmaceutical industry",
+  "version": "0.1.0",
+  "publisher": "your-company",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Data Science",
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "R",
+    "data frame",
+    "statistics",
+    "pharmaceutical",
+    "SDTM",
+    "ADaM",
+    "clinical data"
+  ],
+  "activationEvents": [
+    "onLanguage:r",
+    "onCommand:rDataExplorer.viewDataFrame"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "rDataExplorer.viewDataFrame",
+        "title": "View Data Frame",
+        "category": "R Data Explorer"
+      },
+      {
+        "command": "rDataExplorer.refreshView",
+        "title": "Refresh Data View",
+        "category": "R Data Explorer"
+      }
+    ],
+    "configuration": {
+      "title": "R Data Explorer",
+      "properties": {
+        "rDataExplorer.viewer.maxRowsInitialLoad": {
+          "type": "number",
+          "default": 10000,
+          "description": "Maximum number of rows to load initially"
+        },
+        "rDataExplorer.viewer.theme": {
+          "type": "string",
+          "enum": ["auto", "light", "dark"],
+          "default": "auto",
+          "description": "Theme for the data viewer"
+        },
+        "rDataExplorer.modules.filter.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable filter module"
+        },
+        "rDataExplorer.modules.statistics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable statistics module"
+        },
+        "rDataExplorer.modules.columnManager.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable column manager module"
+        },
+        "rDataExplorer.r.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "Timeout for R commands in milliseconds"
+        },
+        "rDataExplorer.dev.useMockData": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use mock data for development (disable to use real R session)"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "rDataExplorer.viewDataFrame",
+          "when": "editorLangId == r",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "npm run build:extension && npm run build:webview",
+    "build:extension": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "build:webview": "vite build",
+    "watch": "concurrently \"npm run watch:extension\" \"npm run watch:webview\"",
+    "watch:extension": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --watch",
+    "watch:webview": "vite build --watch",
+    "lint": "eslint src --ext ts,tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "test": "vitest run",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
+    "esbuild": "^0.19.10",
+    "eslint": "^8.56.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10",
+    "vitest": "^1.1.0"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.11.2",
+    "@tanstack/react-virtual": "^3.0.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.4.7"
+  }
+}
+
