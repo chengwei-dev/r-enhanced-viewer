@@ -1,5 +1,5 @@
 /**
- * R Data Explorer - VS Code Extension Entry Point
+ * R Enhanced Viewer (REViewer) - VS Code Extension Entry Point
  * Enhanced data frame viewer for R statistical programmers
  */
 
@@ -18,7 +18,7 @@ let extensionContext: vscode.ExtensionContext;
  * Called when the extension is activated
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  console.log('R Data Explorer is activating...');
+  console.log('R Enhanced Viewer is activating...');
   extensionContext = context;
 
   // Register core modules
@@ -36,7 +36,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     eventBus.emit('theme:changed', { theme: themeKind });
   });
 
-  console.log('R Data Explorer activated successfully');
+  console.log('R Enhanced Viewer activated successfully');
 }
 
 /**
@@ -58,7 +58,7 @@ function registerModules(): void {
 function registerCommands(context: vscode.ExtensionContext): void {
   // Command: View Data Frame
   const viewDataFrameCmd = vscode.commands.registerCommand(
-    'rDataExplorer.viewDataFrame',
+    'reviewer.viewDataFrame',
     async () => {
       // Get list of available data frames
       try {
@@ -97,7 +97,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
   // Command: Refresh View
   const refreshViewCmd = vscode.commands.registerCommand(
-    'rDataExplorer.refreshView',
+    'reviewer.refreshView',
     async () => {
       const panel = viewerModule.getPanel();
       if (panel) {
@@ -111,7 +111,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
 
   // Command: View Variable (from editor selection)
   const viewVariableCmd = vscode.commands.registerCommand(
-    'rDataExplorer.viewVariable',
+    'reviewer.viewVariable',
     async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
@@ -143,7 +143,7 @@ function registerCommands(context: vscode.ExtensionContext): void {
  * Called when the extension is deactivated
  */
 export async function deactivate(): Promise<void> {
-  console.log('R Data Explorer is deactivating...');
+  console.log('R Enhanced Viewer is deactivating...');
 
   // Deactivate all modules
   await moduleRegistry.deactivateAll();
@@ -154,7 +154,7 @@ export async function deactivate(): Promise<void> {
   // Dispose data provider
   dataProvider.dispose();
 
-  console.log('R Data Explorer deactivated');
+  console.log('R Enhanced Viewer deactivated');
 }
 
 /**

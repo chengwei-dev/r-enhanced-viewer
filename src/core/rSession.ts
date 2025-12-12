@@ -34,7 +34,7 @@ class RSession {
 
     // Watch for configuration changes
     vscode.workspace.onDidChangeConfiguration((e) => {
-      if (e.affectsConfiguration('rDataExplorer.r')) {
+      if (e.affectsConfiguration('reviewer.r')) {
         this.config = this.loadConfig();
       }
     });
@@ -44,7 +44,7 @@ class RSession {
    * Load configuration from VS Code settings
    */
   private loadConfig(): IRSessionConfig {
-    const config = vscode.workspace.getConfiguration('rDataExplorer.r');
+    const config = vscode.workspace.getConfiguration('reviewer.r');
     return {
       timeout: config.get<number>('timeout', 30000),
       maxRetries: config.get<number>('maxRetries', 3),

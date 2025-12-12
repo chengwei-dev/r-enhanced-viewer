@@ -142,7 +142,7 @@ class ModuleRegistry {
    * @param context - VS Code extension context
    */
   async activateAll(context: vscode.ExtensionContext): Promise<void> {
-    const config = vscode.workspace.getConfiguration('rDataExplorer.modules');
+    const config = vscode.workspace.getConfiguration('reviewer.modules');
 
     // Sort modules by dependencies (topological sort)
     const sorted = this.topologicalSort();

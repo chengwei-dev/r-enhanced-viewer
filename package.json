@@ -1,6 +1,6 @@
 {
-  "name": "r-data-explorer",
-  "displayName": "R Data Explorer",
+  "name": "r-enhanced-viewer",
+  "displayName": "R Enhanced Viewer",
   "description": "Enhanced data frame viewer for R statistical programmers in pharmaceutical industry",
   "version": "0.1.0",
   "publisher": "your-company",
@@ -23,57 +23,57 @@
   ],
   "activationEvents": [
     "onLanguage:r",
-    "onCommand:rDataExplorer.viewDataFrame"
+    "onCommand:reviewer.viewDataFrame"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "rDataExplorer.viewDataFrame",
+        "command": "reviewer.viewDataFrame",
         "title": "View Data Frame",
-        "category": "R Data Explorer"
+        "category": "REViewer"
       },
       {
-        "command": "rDataExplorer.refreshView",
+        "command": "reviewer.refreshView",
         "title": "Refresh Data View",
-        "category": "R Data Explorer"
+        "category": "REViewer"
       }
     ],
     "configuration": {
-      "title": "R Data Explorer",
+      "title": "R Enhanced Viewer",
       "properties": {
-        "rDataExplorer.viewer.maxRowsInitialLoad": {
+        "reviewer.viewer.maxRowsInitialLoad": {
           "type": "number",
           "default": 10000,
           "description": "Maximum number of rows to load initially"
         },
-        "rDataExplorer.viewer.theme": {
+        "reviewer.viewer.theme": {
           "type": "string",
           "enum": ["auto", "light", "dark"],
           "default": "auto",
           "description": "Theme for the data viewer"
         },
-        "rDataExplorer.modules.filter.enabled": {
+        "reviewer.modules.filter.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable filter module"
         },
-        "rDataExplorer.modules.statistics.enabled": {
+        "reviewer.modules.statistics.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable statistics module"
         },
-        "rDataExplorer.modules.columnManager.enabled": {
+        "reviewer.modules.columnManager.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable column manager module"
         },
-        "rDataExplorer.r.timeout": {
+        "reviewer.r.timeout": {
           "type": "number",
           "default": 30000,
           "description": "Timeout for R commands in milliseconds"
         },
-        "rDataExplorer.dev.useMockData": {
+        "reviewer.dev.useMockData": {
           "type": "boolean",
           "default": true,
           "description": "Use mock data for development (disable to use real R session)"
@@ -83,7 +83,7 @@
     "menus": {
       "editor/context": [
         {
-          "command": "rDataExplorer.viewDataFrame",
+          "command": "reviewer.viewDataFrame",
           "when": "editorLangId == r",
           "group": "navigation"
         }

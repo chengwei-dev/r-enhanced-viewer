@@ -1,4 +1,4 @@
-# R Data Explorer
+# R Enhanced Viewer (REViewer)
 
 A VS Code / Cursor extension for enhanced data frame viewing, designed specifically for statistical programmers in the pharmaceutical industry.
 
@@ -32,7 +32,7 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 1. Open an R file in VS Code
 2. Load some data in R (e.g., `df <- mtcars`)
 3. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-4. Run `R Data Explorer: View Data Frame`
+4. Run `REViewer: View Data Frame`
 5. Select a data frame from the list
 
 ## Project Architecture
@@ -40,7 +40,7 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 This extension follows a **modular architecture** designed for easy extension and maintenance:
 
 ```
-r-data-explorer/
+r-enhanced-viewer/
 ├── src/
 │   ├── core/                    # Core infrastructure
 │   │   ├── types.ts             # Shared TypeScript types
@@ -120,11 +120,11 @@ Configure the extension via VS Code settings:
 
 ```json
 {
-  "rDataExplorer.viewer.maxRowsInitialLoad": 10000,
-  "rDataExplorer.viewer.theme": "auto",
-  "rDataExplorer.modules.filter.enabled": true,
-  "rDataExplorer.modules.statistics.enabled": true,
-  "rDataExplorer.r.timeout": 30000
+  "reviewer.viewer.maxRowsInitialLoad": 10000,
+  "reviewer.viewer.theme": "auto",
+  "reviewer.modules.filter.enabled": true,
+  "reviewer.modules.statistics.enabled": true,
+  "reviewer.r.timeout": 30000
 }
 ```
 

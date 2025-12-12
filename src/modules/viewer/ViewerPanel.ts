@@ -13,7 +13,7 @@ import { eventBus } from '../../core/eventBus';
  * ViewerPanel class - Manages the webview for data viewing
  */
 export class ViewerPanel {
-  public static readonly viewType = 'rDataExplorer.viewer';
+  public static readonly viewType = 'reviewer.viewer';
   private static panels: Map<string, ViewerPanel> = new Map();
 
   private readonly panel: vscode.WebviewPanel;
@@ -305,7 +305,7 @@ export class ViewerPanel {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
-    <title>R Data Explorer</title>
+    <title>R Enhanced Viewer</title>
     <style>
       :root {
         --bg-primary: #1e1e1e;
