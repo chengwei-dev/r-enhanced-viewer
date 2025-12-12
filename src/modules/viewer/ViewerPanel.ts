@@ -429,6 +429,13 @@ export class ViewerPanel {
         display: inline-flex;
         align-items: center;
       }
+      .sort-indicator.inactive {
+        color: var(--text-muted);
+        opacity: 0.5;
+      }
+      th:hover .sort-indicator.inactive {
+        opacity: 1;
+      }
       .sort-priority { 
         font-size: 9px; 
         vertical-align: super;
@@ -528,16 +535,15 @@ export class ViewerPanel {
           data.columns.forEach((col, colIdx) => {
             const sortCol = sortState.columns.find(s => s.columnName === col.name);
             const sortClass = sortCol ? 'sorted' : '';
-            const sortIcon = sortCol ? (sortCol.direction === 'asc' ? '↑' : '↓') : '';
+            const sortIcon = sortCol ? (sortCol.direction === 'asc' ? '↑' : '↓') : '↕';
+            const sortIndicatorClass = sortCol ? 'sort-indicator' : 'sort-indicator inactive';
             const sortPriority = sortCol && sortState.columns.length > 1 ? '<span class="sort-priority">' + sortCol.priority + '</span>' : '';
             
             html += '<th class="' + sortClass + '" data-col-idx="' + colIdx + '" data-col-name="' + escapeHtml(col.name) + '">';
             html += '<div class="col-header">';
             html += '<div class="col-name-row">';
             html += '<span>' + escapeHtml(col.name) + '</span>';
-            if (sortIcon) {
-              html += '<span class="sort-indicator">' + sortIcon + sortPriority + '</span>';
-            }
+            html += '<span class="' + sortIndicatorClass + '">' + sortIcon + sortPriority + '</span>';
             html += '</div>';
             html += '<div class="col-type">' + col.type + '</div>';
             html += '</div>';
@@ -663,14 +669,21 @@ export class ViewerPanel {
         }
 
         function applySortAndRender() {
-          if (sortState.columns.length === 0) {
-            renderTable(currentData);
+          // If filters are active, re-apply filters (which also applies sort)
+          if (quickFilterState.enabled && quickFilterState.filters.length > 0) {
+            applyQuickFiltersAndRender();
             return;
           }
           
-          const sorted = sortRows(currentData.rows, sortState, currentData.columns);
-          const sortedData = { ...currentData, rows: sorted };
-          renderTable(sortedData);
+          // No filters - just apply sort to original data
+          if (sortState.columns.length === 0) {
+            filteredRows = null;
+          } else {
+            filteredRows = sortRows(currentData.rows, sortState, currentData.columns);
+          }
+          
+          renderTable(currentData);
+          updateStatus();
         }
 
         function sortRows(rows, sortState, columns) {
@@ -680,7 +693,7 @@ export class ViewerPanel {
           
           sortedRows.sort((a, b) => {
             for (const sortCol of sortState.columns) {
-              const colIdx = columns.findIndex(c => c.columnName === sortCol.columnName);
+              const colIdx = columns.findIndex(c => c.name === sortCol.columnName);
               if (colIdx === -1) continue;
               
               const aVal = Array.isArray(a) ? a[colIdx] : a[sortCol.columnName];
@@ -787,7 +800,7 @@ export class ViewerPanel {
         }
         
         function matchesFilter(row, filter) {
-          const colIdx = currentData.columns.findIndex(c => c.columnName === filter.columnName);
+          const colIdx = currentData.columns.findIndex(c => c.name === filter.columnName);
           if (colIdx === -1) return false;
           
           const value = Array.isArray(row) ? row[colIdx] : row[filter.columnName];
