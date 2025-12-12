@@ -1,0 +1,22 @@
+Package: reviewer
+Title: REViewer - Enhanced Data Frame Viewer for VS Code
+Version: 0.1.0
+Authors@R: 
+    person("Your Name", email = "your.email@example.com", role = c("aut", "cre"))
+Description: Provides the REView() function to send R data frames to the 
+    REViewer VS Code extension for enhanced viewing. Designed for statistical 
+    programmers in the pharmaceutical industry who need SAS VIEWTABLE-like 
+    functionality in R.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports:
+    jsonlite,
+    httr
+Suggests:
+    dplyr,
+    testthat (>= 3.0.0)
+URL: https://github.com/YOUR_USERNAME/reviewer
+BugReports: https://github.com/YOUR_USERNAME/reviewer/issues
+

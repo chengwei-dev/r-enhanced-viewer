@@ -22,8 +22,7 @@
     "clinical data"
   ],
   "activationEvents": [
-    "onLanguage:r",
-    "onCommand:reviewer.viewDataFrame"
+    "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -36,6 +35,11 @@
       {
         "command": "reviewer.refreshView",
         "title": "Refresh Data View",
+        "category": "REViewer"
+      },
+      {
+        "command": "reviewer.showServerInfo",
+        "title": "Show Server Info & Get R Code",
         "category": "REViewer"
       }
     ],
@@ -72,6 +76,11 @@
           "type": "number",
           "default": 30000,
           "description": "Timeout for R commands in milliseconds"
+        },
+        "reviewer.server.port": {
+          "type": "number",
+          "default": 8765,
+          "description": "Port for the REViewer HTTP server (used by REView() function in R)"
         },
         "reviewer.dev.useMockData": {
           "type": "boolean",

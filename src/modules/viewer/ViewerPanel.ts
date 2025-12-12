@@ -20,6 +20,7 @@ export class ViewerPanel {
   private readonly extensionUri: vscode.Uri;
   private dataFrameName: string;
   private disposables: vscode.Disposable[] = [];
+  private pendingData: IDataFrame | null = null;
 
   /**
    * Create or show viewer panel for a data frame
@@ -61,16 +62,59 @@ export class ViewerPanel {
   }
 
   /**
+   * Create or show viewer panel with data directly (from HTTP server)
+   * This is used when data is received from R's REView() function
+   */
+  public static createOrShowWithData(
+    extensionUri: vscode.Uri,
+    data: IDataFrame
+  ): ViewerPanel {
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
+
+    // Check if panel already exists for this data frame
+    const existing = ViewerPanel.panels.get(data.name);
+    if (existing) {
+      existing.panel.reveal(column);
+      existing.updateData(data);
+      return existing;
+    }
+
+    // Create new panel
+    const panel = vscode.window.createWebviewPanel(
+      ViewerPanel.viewType,
+      `Data: ${data.name}`,
+      column || vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        enableForms: false,
+        localResourceRoots: [
+          vscode.Uri.joinPath(extensionUri, 'dist', 'webview'),
+        ],
+      }
+    );
+
+    const viewerPanel = new ViewerPanel(panel, extensionUri, data.name, data);
+    ViewerPanel.panels.set(data.name, viewerPanel);
+
+    return viewerPanel;
+  }
+
+  /**
    * Constructor
    */
   private constructor(
     panel: vscode.WebviewPanel,
     extensionUri: vscode.Uri,
-    dataFrameName: string
+    dataFrameName: string,
+    initialData?: IDataFrame
   ) {
     this.panel = panel;
     this.extensionUri = extensionUri;
     this.dataFrameName = dataFrameName;
+    this.pendingData = initialData || null;
 
     // Set up the webview content
     this.panel.webview.html = this.getHtmlContent();
@@ -89,16 +133,20 @@ export class ViewerPanel {
     this.panel.onDidChangeViewState(
       (e) => {
         if (e.webviewPanel.visible) {
-          // Panel became visible, refresh data
-          this.loadData();
+          // Panel became visible, refresh data if no pending data
+          if (!this.pendingData) {
+            this.loadData();
+          }
         }
       },
       null,
       this.disposables
     );
 
-    // Initial data load
-    this.loadData();
+    // Initial data load (if we have pending data, it will be sent when webview is ready)
+    if (!this.pendingData) {
+      this.loadData();
+    }
   }
 
   /**
@@ -168,7 +216,14 @@ export class ViewerPanel {
     switch (message.type) {
       case 'ready':
         // Webview is ready, send initial data
-        await this.loadData();
+        if (this.pendingData) {
+          // Use pending data from HTTP server
+          this.updateData(this.pendingData);
+          this.pendingData = null;
+        } else {
+          // Load data from dataProvider
+          await this.loadData();
+        }
         this.sendTheme();
         break;
 

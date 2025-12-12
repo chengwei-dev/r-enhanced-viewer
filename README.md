@@ -5,6 +5,7 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 ## Features
 
 - 📊 **Enhanced Data Viewing** - View R data frames in a modern spreadsheet-like interface
+- 🚀 **REView() Function** - Type `REView(df)` in R console to instantly view data
 - 🔍 **Global Search** - Search across all columns instantly
 - ↕️ **Sorting** - Click column headers to sort by any column
 - ↔️ **Column Resizing** - Drag column borders to adjust width
@@ -28,6 +29,28 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 4. Press `F5` in VS Code to run the extension in development mode
 
 ### Usage
+
+#### Option 1: Use REView() Function (Recommended) 🚀
+
+The easiest way! Just type `REView(df)` in your R console:
+
+```r
+# One-time setup: Install required packages
+install.packages(c("jsonlite", "httr"))
+
+# Get the REView function (click status bar "REViewer: 8765" → "Copy R Code")
+# Or source directly:
+source("path/to/r-package/REView_quick.R")
+
+# Now view any data frame instantly!
+REView(mtcars)
+
+# Works with pipes too!
+library(dplyr)
+iris %>% filter(Species == "setosa") %>% REView()
+```
+
+#### Option 2: Command Palette
 
 1. Open an R file in VS Code
 2. Load some data in R (e.g., `df <- mtcars`)

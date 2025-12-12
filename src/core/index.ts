@@ -8,4 +8,5 @@ export { eventBus, EventBus } from './eventBus';
 export { moduleRegistry, ModuleRegistry } from './moduleRegistry';
 export { rSession, RSession } from './rSession';
 export { dataProvider, DataProvider } from './dataProvider';
+export { REViewerServer, getServerInstance, setServerInstance } from './httpServer';
 
