@@ -84,6 +84,31 @@ export interface IDataFrameMetadata {
 }
 
 // ============================================
+// Sort Types
+// ============================================
+
+/**
+ * Sort direction
+ */
+export type SortDirection = 'asc' | 'desc';
+
+/**
+ * Single sort column specification
+ */
+export interface ISortColumn {
+  columnName: string;
+  direction: SortDirection;
+  priority: number;  // 1 = primary, 2 = secondary, etc.
+}
+
+/**
+ * Complete sort state
+ */
+export interface ISortState {
+  columns: ISortColumn[];  // Array for multi-column sort
+}
+
+// ============================================
 // Selection Types
 // ============================================
 
@@ -119,7 +144,16 @@ export interface ISelection {
 // ============================================
 
 /**
- * Filter operator types
+ * Quick filter for keyboard shortcuts (E, N, G, L, C keys)
+ */
+export interface IQuickFilter {
+  columnName: string;
+  operator: 'eq' | 'ne' | 'gt' | 'lt' | 'contains';
+  value: CellValue;
+}
+
+/**
+ * Filter operator types (for advanced filtering)
  */
 export type FilterOperator =
   | 'equals'
@@ -159,7 +193,7 @@ export interface IFilterGroup {
 }
 
 /**
- * Complete filter state
+ * Complete filter state (for advanced filtering)
  */
 export interface IFilterState {
   enabled: boolean;
@@ -167,22 +201,16 @@ export interface IFilterState {
   groups: IFilterGroup[];
 }
 
-// ============================================
-// Sort Types
-// ============================================
-
 /**
- * Sort direction
+ * Quick filter state (for keyboard shortcuts)
  */
-export type SortDirection = 'asc' | 'desc';
-
-/**
- * Single sort specification
- */
-export interface ISortSpec {
-  columnName: string;
-  direction: SortDirection;
+export interface IQuickFilterState {
+  enabled: boolean;
+  filters: IQuickFilter[];  // Support multiple filters
+  logic: 'AND' | 'OR';      // How to combine filters
 }
+
+// Note: Sort types moved earlier in file for better organization
 
 // ============================================
 // Module System Types
@@ -276,7 +304,7 @@ export interface IRRequest {
     limit?: number;
     columns?: string[];
     filter?: string; // R filter expression
-    sort?: ISortSpec[];
+    sort?: ISortColumn[];
   };
 }
 
@@ -320,7 +348,7 @@ export interface IEventPayloads {
   'data:loaded': { data: IDataFrame };
   'data:error': { error: string };
   'data:filtered': { filter: IFilterState; resultCount: number };
-  'data:sorted': { sort: ISortSpec[] };
+  'data:sorted': { sort: ISortColumn[] };
   'columns:reordered': { columns: string[] };
   'columns:visibility': { column: string; visible: boolean };
   'selection:changed': { selection: ISelection };

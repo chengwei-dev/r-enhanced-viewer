@@ -338,6 +338,50 @@ export class ViewerPanel {
         border-bottom: 1px solid var(--border-color);
         gap: 12px;
       }
+      .filter-chips-container {
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 4px 12px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .filter-chips-container.hidden { display: none; }
+      .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        background: var(--accent);
+        color: white;
+        border-radius: 12px;
+        font-size: 11px;
+      }
+      .filter-chip-remove {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .filter-chip-remove:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .filter-logic {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
       .toolbar-title { font-weight: 600; font-size: 14px; }
       .toolbar-btn {
         height: 28px;
@@ -371,9 +415,25 @@ export class ViewerPanel {
         white-space: nowrap;
         cursor: pointer;
         user-select: none;
+        position: relative;
       }
       th:hover { background: var(--bg-hover); }
+      th.sorted { background: var(--bg-tertiary); }
+      .col-header { display: flex; flex-direction: column; gap: 2px; }
+      .col-name-row { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
       .col-type { font-size: 10px; color: var(--text-muted); font-weight: normal; }
+      .sort-indicator { 
+        font-size: 12px; 
+        color: var(--accent); 
+        margin-left: 4px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .sort-priority { 
+        font-size: 9px; 
+        vertical-align: super;
+        color: var(--accent);
+      }
       td { 
         padding: 6px 8px; 
         border-bottom: 1px solid var(--border-color);
@@ -382,6 +442,28 @@ export class ViewerPanel {
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 200px;
+        cursor: pointer;
+        position: relative;
+      }
+      td.selected {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+        background: rgba(0, 122, 204, 0.1);
+      }
+      td:hover::after {
+        content: 'Press E to filter';
+        position: absolute;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 10px;
+        white-space: nowrap;
+        z-index: 100;
+        pointer-events: none;
       }
       tr:nth-child(even) { background: var(--bg-secondary); }
       tr:hover { background: var(--bg-hover); }
@@ -408,6 +490,7 @@ export class ViewerPanel {
       <input type="text" class="search-input" id="search" placeholder="Search...">
       <button class="toolbar-btn" id="refresh">⟳ Refresh</button>
     </div>
+    <div class="filter-chips-container hidden" id="filter-chips"></div>
     <div class="main" id="main">
       <div class="loading">Loading data...</div>
     </div>
@@ -420,6 +503,9 @@ export class ViewerPanel {
         const vscode = acquireVsCodeApi();
         let currentData = null;
         let filteredRows = null;
+        let sortState = { columns: [] };
+        let selectedCell = null;  // { rowIndex, columnIndex, value, columnName }
+        let quickFilterState = { enabled: false, filters: [], logic: 'AND' };
 
         // DOM elements
         const titleEl = document.getElementById('title');
@@ -427,6 +513,7 @@ export class ViewerPanel {
         const statusEl = document.getElementById('status');
         const searchEl = document.getElementById('search');
         const refreshBtn = document.getElementById('refresh');
+        const filterChipsEl = document.getElementById('filter-chips');
 
         // Render table
         function renderTable(data) {
@@ -438,8 +525,23 @@ export class ViewerPanel {
           const rows = filteredRows || data.rows;
           
           let html = '<table><thead><tr><th class="row-num">#</th>';
-          data.columns.forEach(col => {
-            html += '<th>' + escapeHtml(col.name) + '<div class="col-type">' + col.type + '</div></th>';
+          data.columns.forEach((col, colIdx) => {
+            const sortCol = sortState.columns.find(s => s.columnName === col.name);
+            const sortClass = sortCol ? 'sorted' : '';
+            const sortIcon = sortCol ? (sortCol.direction === 'asc' ? '↑' : '↓') : '';
+            const sortPriority = sortCol && sortState.columns.length > 1 ? '<span class="sort-priority">' + sortCol.priority + '</span>' : '';
+            
+            html += '<th class="' + sortClass + '" data-col-idx="' + colIdx + '" data-col-name="' + escapeHtml(col.name) + '">';
+            html += '<div class="col-header">';
+            html += '<div class="col-name-row">';
+            html += '<span>' + escapeHtml(col.name) + '</span>';
+            if (sortIcon) {
+              html += '<span class="sort-indicator">' + sortIcon + sortPriority + '</span>';
+            }
+            html += '</div>';
+            html += '<div class="col-type">' + col.type + '</div>';
+            html += '</div>';
+            html += '</th>';
           });
           html += '</tr></thead><tbody>';
 
@@ -449,13 +551,34 @@ export class ViewerPanel {
               const value = Array.isArray(row) ? row[colIdx] : row[col.name];
               const cellClass = getCellClass(value, col.type);
               const displayValue = formatValue(value, col.type);
-              html += '<td class="' + cellClass + '">' + escapeHtml(displayValue) + '</td>';
+              const isSelected = selectedCell && selectedCell.rowIndex === idx && selectedCell.columnIndex === colIdx;
+              html += '<td class="' + cellClass + (isSelected ? ' selected' : '') + '" data-row="' + idx + '" data-col="' + colIdx + '">' + escapeHtml(displayValue) + '</td>';
             });
             html += '</tr>';
           });
 
           html += '</tbody></table>';
           mainEl.innerHTML = html;
+          
+          // Add click handlers to column headers
+          const headers = mainEl.querySelectorAll('th[data-col-name]');
+          headers.forEach(th => {
+            th.addEventListener('click', function(e) {
+              const columnName = this.getAttribute('data-col-name');
+              const colIdx = parseInt(this.getAttribute('data-col-idx'));
+              handleColumnClick(e, columnName, data.columns[colIdx].type);
+            });
+          });
+          
+          // Add click handlers to table cells
+          const cells = mainEl.querySelectorAll('td[data-row][data-col]');
+          cells.forEach(td => {
+            td.addEventListener('click', function() {
+              const rowIndex = parseInt(this.getAttribute('data-row'));
+              const columnIndex = parseInt(this.getAttribute('data-col'));
+              handleCellClick(rowIndex, columnIndex);
+            });
+          });
         }
 
         function getCellClass(value, type) {
@@ -479,19 +602,245 @@ export class ViewerPanel {
           return div.innerHTML;
         }
 
-        // Search/filter
+        // Cell selection handling
+        function handleCellClick(rowIndex, columnIndex) {
+          const rows = filteredRows || currentData.rows;
+          const row = rows[rowIndex];
+          const value = Array.isArray(row) ? row[columnIndex] : row[currentData.columns[columnIndex].name];
+          const columnName = currentData.columns[columnIndex].name;
+          
+          selectedCell = {
+            rowIndex,
+            columnIndex,
+            value,
+            columnName,
+            columnType: currentData.columns[columnIndex].type
+          };
+          
+          renderTable(currentData);
+        }
+
+        // Sort handling
+        function handleColumnClick(event, columnName, columnType) {
+          const isShift = event.shiftKey;
+          
+          if (!isShift) {
+            // Single column sort - replace existing or toggle
+            const existing = sortState.columns.find(c => c.columnName === columnName);
+            if (existing) {
+              if (existing.direction === 'asc') {
+                existing.direction = 'desc';
+                sortState.columns = [existing];
+              } else {
+                // Third click - remove sort
+                sortState.columns = [];
+              }
+            } else {
+              sortState.columns = [{ columnName, direction: 'asc', priority: 1 }];
+            }
+          } else {
+            // Multi-column sort - add to existing
+            const existing = sortState.columns.find(c => c.columnName === columnName);
+            if (existing) {
+              // Toggle direction
+              existing.direction = existing.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+              // Add new sort column
+              sortState.columns.push({ 
+                columnName, 
+                direction: 'asc', 
+                priority: sortState.columns.length + 1 
+              });
+            }
+          }
+          
+          // Update priorities
+          sortState.columns.forEach((col, idx) => {
+            col.priority = idx + 1;
+          });
+          
+          applySortAndRender();
+        }
+
+        function applySortAndRender() {
+          if (sortState.columns.length === 0) {
+            renderTable(currentData);
+            return;
+          }
+          
+          const sorted = sortRows(currentData.rows, sortState, currentData.columns);
+          const sortedData = { ...currentData, rows: sorted };
+          renderTable(sortedData);
+        }
+
+        function sortRows(rows, sortState, columns) {
+          if (sortState.columns.length === 0) return rows;
+          
+          const sortedRows = [...rows];
+          
+          sortedRows.sort((a, b) => {
+            for (const sortCol of sortState.columns) {
+              const colIdx = columns.findIndex(c => c.columnName === sortCol.columnName);
+              if (colIdx === -1) continue;
+              
+              const aVal = Array.isArray(a) ? a[colIdx] : a[sortCol.columnName];
+              const bVal = Array.isArray(b) ? b[colIdx] : b[sortCol.columnName];
+              const colType = columns[colIdx].type;
+              
+              // Handle NA values - always sort to bottom
+              if (aVal === null || aVal === undefined) return 1;
+              if (bVal === null || bVal === undefined) return -1;
+              
+              let comparison = 0;
+              
+              // Type-specific comparison
+              if (colType === 'numeric' || colType === 'integer') {
+                comparison = Number(aVal) - Number(bVal);
+              } else if (colType === 'Date' || colType === 'POSIXct' || colType === 'POSIXlt') {
+                comparison = new Date(aVal).getTime() - new Date(bVal).getTime();
+              } else {
+                // String comparison
+                comparison = String(aVal).localeCompare(String(bVal));
+              }
+              
+              if (comparison !== 0) {
+                return sortCol.direction === 'asc' ? comparison : -comparison;
+              }
+            }
+            return 0;
+          });
+          
+          return sortedRows;
+        }
+
+        // Quick filter handling
+        function applyQuickFiltersAndRender() {
+          renderFilterChips();
+          
+          if (!quickFilterState.enabled || quickFilterState.filters.length === 0) {
+            filteredRows = null;
+            renderTable(currentData);
+            updateStatus();
+            return;
+          }
+          
+          // Apply filters
+          filteredRows = currentData.rows.filter(row => {
+            if (quickFilterState.logic === 'AND') {
+              return quickFilterState.filters.every(filter => matchesFilter(row, filter));
+            } else {
+              return quickFilterState.filters.some(filter => matchesFilter(row, filter));
+            }
+          });
+          
+          // Apply sort to filtered rows
+          if (sortState.columns.length > 0) {
+            filteredRows = sortRows(filteredRows, sortState, currentData.columns);
+          }
+          
+          renderTable(currentData);
+          updateStatus();
+        }
+        
+        function renderFilterChips() {
+          if (!quickFilterState.enabled || quickFilterState.filters.length === 0) {
+            filterChipsEl.classList.add('hidden');
+            filterChipsEl.innerHTML = '';
+            return;
+          }
+          
+          filterChipsEl.classList.remove('hidden');
+          
+          let html = '';
+          quickFilterState.filters.forEach((filter, idx) => {
+            if (idx > 0) {
+              html += '<span class="filter-logic">' + quickFilterState.logic + '</span>';
+            }
+            const operatorSymbol = filter.operator === 'eq' ? '==' : 
+                                  filter.operator === 'ne' ? '!=' :
+                                  filter.operator === 'gt' ? '>' :
+                                  filter.operator === 'lt' ? '<' : '~';
+            html += '<div class="filter-chip">';
+            html += '<span>' + escapeHtml(filter.columnName) + ' ' + operatorSymbol + ' ' + escapeHtml(String(filter.value)) + '</span>';
+            html += '<button class="filter-chip-remove" data-filter-idx="' + idx + '">×</button>';
+            html += '</div>';
+          });
+          
+          filterChipsEl.innerHTML = html;
+          
+          // Add click handlers to remove buttons
+          const removeButtons = filterChipsEl.querySelectorAll('.filter-chip-remove');
+          removeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+              const idx = parseInt(this.getAttribute('data-filter-idx'));
+              removeFilter(idx);
+            });
+          });
+        }
+        
+        function removeFilter(index) {
+          quickFilterState.filters.splice(index, 1);
+          if (quickFilterState.filters.length === 0) {
+            quickFilterState.enabled = false;
+          }
+          applyQuickFiltersAndRender();
+        }
+        
+        function matchesFilter(row, filter) {
+          const colIdx = currentData.columns.findIndex(c => c.columnName === filter.columnName);
+          if (colIdx === -1) return false;
+          
+          const value = Array.isArray(row) ? row[colIdx] : row[filter.columnName];
+          
+          switch (filter.operator) {
+            case 'eq':
+              return value === filter.value;
+            case 'ne':
+              return value !== filter.value;
+            case 'gt':
+              return value > filter.value;
+            case 'lt':
+              return value < filter.value;
+            case 'contains':
+              return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+            default:
+              return false;
+          }
+        }
+
+        // Search/filter (global search box)
         searchEl.addEventListener('input', function(e) {
           const query = e.target.value.toLowerCase();
+          
+          // Start with original or quick-filtered data
+          let baseRows = currentData.rows;
+          if (quickFilterState.enabled && quickFilterState.filters.length > 0) {
+            baseRows = currentData.rows.filter(row => {
+              if (quickFilterState.logic === 'AND') {
+                return quickFilterState.filters.every(filter => matchesFilter(row, filter));
+              } else {
+                return quickFilterState.filters.some(filter => matchesFilter(row, filter));
+              }
+            });
+          }
+          
           if (!query) {
-            filteredRows = null;
+            filteredRows = quickFilterState.enabled ? baseRows : null;
           } else {
-            filteredRows = currentData.rows.filter(row => {
+            // Apply search to base rows
+            filteredRows = baseRows.filter(row => {
               return currentData.columns.some((col, idx) => {
                 const value = Array.isArray(row) ? row[idx] : row[col.name];
                 return String(value).toLowerCase().includes(query);
               });
             });
           }
+          
+          // Apply sort to filtered rows
+          if (filteredRows && sortState.columns.length > 0) {
+            filteredRows = sortRows(filteredRows, sortState, currentData.columns);
+          }
+          
           renderTable(currentData);
           updateStatus();
         });
@@ -509,6 +858,117 @@ export class ViewerPanel {
           statusEl.textContent = 'Rows: ' + shown + (filteredRows ? ' / ' + total : '') + ' | Columns: ' + currentData.totalColumns;
         }
 
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+          // E key - Equal filter (requires selected cell)
+          if ((e.key === 'e' || e.key === 'E') && selectedCell) {
+            e.preventDefault();
+            const isShift = e.shiftKey;
+            
+            const newFilter = {
+              columnName: selectedCell.columnName,
+              operator: 'eq',
+              value: selectedCell.value
+            };
+            
+            if (!isShift) {
+              // Replace all filters
+              quickFilterState.filters = [newFilter];
+            } else {
+              // Add to existing filters
+              quickFilterState.filters.push(newFilter);
+            }
+            
+            quickFilterState.enabled = true;
+            applyQuickFiltersAndRender();
+            return;
+          }
+          
+          // Esc key - Clear filters and selection
+          if (e.key === 'Escape') {
+            quickFilterState = { enabled: false, filters: [], logic: 'AND' };
+            selectedCell = null;
+            filteredRows = null;
+            searchEl.value = '';
+            renderTable(currentData);
+            updateStatus();
+            return;
+          }
+          
+          // Navigation shortcuts
+          if (!currentData) return;
+          
+          const rows = filteredRows || currentData.rows;
+          const numRows = rows.length;
+          const numCols = currentData.columns.length;
+          
+          // Home - First row
+          if (e.key === 'Home' && !e.ctrlKey) {
+            e.preventDefault();
+            if (selectedCell) {
+              handleCellClick(0, selectedCell.columnIndex);
+              scrollToCell(0, selectedCell.columnIndex);
+            }
+            return;
+          }
+          
+          // End - Last row
+          if (e.key === 'End' && !e.ctrlKey) {
+            e.preventDefault();
+            if (selectedCell) {
+              handleCellClick(numRows - 1, selectedCell.columnIndex);
+              scrollToCell(numRows - 1, selectedCell.columnIndex);
+            }
+            return;
+          }
+          
+          // Ctrl+Home - First column
+          if (e.key === 'Home' && e.ctrlKey) {
+            e.preventDefault();
+            if (selectedCell) {
+              handleCellClick(selectedCell.rowIndex, 0);
+              scrollToCell(selectedCell.rowIndex, 0);
+            }
+            return;
+          }
+          
+          // Ctrl+End - Last column
+          if (e.key === 'End' && e.ctrlKey) {
+            e.preventDefault();
+            if (selectedCell) {
+              handleCellClick(selectedCell.rowIndex, numCols - 1);
+              scrollToCell(selectedCell.rowIndex, numCols - 1);
+            }
+            return;
+          }
+          
+          // Arrow keys - Navigate cells
+          if (selectedCell && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+            e.preventDefault();
+            let newRow = selectedCell.rowIndex;
+            let newCol = selectedCell.columnIndex;
+            
+            if (e.key === 'ArrowUp' && newRow > 0) newRow--;
+            if (e.key === 'ArrowDown' && newRow < numRows - 1) newRow++;
+            if (e.key === 'ArrowLeft' && newCol > 0) newCol--;
+            if (e.key === 'ArrowRight' && newCol < numCols - 1) newCol++;
+            
+            if (newRow !== selectedCell.rowIndex || newCol !== selectedCell.columnIndex) {
+              handleCellClick(newRow, newCol);
+              scrollToCell(newRow, newCol);
+            }
+            return;
+          }
+        });
+        
+        // Scroll to cell helper
+        function scrollToCell(rowIndex, columnIndex) {
+          const cell = mainEl.querySelector('td[data-row="' + rowIndex + '"][data-col="' + columnIndex + '"]');
+          if (cell) {
+            cell.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+          }
+        }
+
         // Handle messages from extension
         window.addEventListener('message', function(event) {
           const message = event.data;
@@ -516,6 +976,7 @@ export class ViewerPanel {
             case 'setData':
               currentData = message.payload;
               filteredRows = null;
+              sortState = { columns: [] };  // Reset sort on new data
               titleEl.textContent = '📊 ' + currentData.name;
               renderTable(currentData);
               updateStatus();
