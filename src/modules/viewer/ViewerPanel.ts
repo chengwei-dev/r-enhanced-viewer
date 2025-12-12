@@ -310,6 +310,7 @@ export class ViewerPanel {
       :root {
         --bg-primary: #1e1e1e;
         --bg-secondary: #252526;
+        --bg-tertiary: #2d2d30;
         --bg-hover: #3c3c3c;
         --text-primary: #cccccc;
         --text-muted: #6e6e6e;
@@ -328,6 +329,296 @@ export class ViewerPanel {
         color: var(--text-primary);
         display: flex;
         flex-direction: column;
+      }
+      .content-wrapper {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+      .main-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      /* Frequency Panel Styles */
+      .freq-panel {
+        width: 280px;
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .freq-panel.hidden { display: none; }
+      .freq-panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--bg-tertiary);
+      }
+      .freq-panel-title {
+        font-weight: 600;
+        font-size: 12px;
+      }
+      .freq-panel-close {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 2px 6px;
+        border-radius: 3px;
+      }
+      .freq-panel-close:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+      }
+      .freq-panel-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px 0;
+      }
+      .freq-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+      .freq-table th {
+        text-align: left;
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        background: var(--bg-secondary);
+      }
+      .freq-table td {
+        padding: 4px 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .freq-table tr:hover {
+        background: var(--bg-hover);
+        cursor: pointer;
+      }
+      .freq-value { color: var(--cell-character); }
+      .freq-count { text-align: right; color: var(--cell-numeric); }
+      .freq-percent { text-align: right; color: var(--text-muted); }
+      .numeric-stats {
+        padding: 12px;
+      }
+      .stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .stat-label { color: var(--text-muted); }
+      .stat-value { color: var(--cell-numeric); font-weight: 500; }
+      /* Variable Selector Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      .modal-overlay.hidden { display: none; }
+      .modal {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        width: 500px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .modal-title { font-weight: 600; font-size: 14px; }
+      .modal-close {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 2px 6px;
+      }
+      .modal-close:hover { color: var(--text-primary); }
+      .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+      .var-search {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        margin-bottom: 12px;
+      }
+      .var-actions {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .var-actions button {
+        padding: 4px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        cursor: pointer;
+        font-size: 11px;
+      }
+      .var-actions button:hover { background: var(--bg-hover); }
+      .var-list {
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .var-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+      }
+      .var-item:last-child { border-bottom: none; }
+      .var-item:hover { background: var(--bg-hover); }
+      .var-item.selected { background: rgba(0, 122, 204, 0.2); }
+      .var-item input[type="checkbox"] { cursor: pointer; }
+      .var-name { flex: 1; }
+      .var-type { font-size: 10px; color: var(--text-muted); }
+      .var-drag-handle {
+        color: var(--text-muted);
+        cursor: grab;
+        padding: 0 4px;
+      }
+      .var-drag-handle:active { cursor: grabbing; }
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--border-color);
+      }
+      .modal-footer button {
+        padding: 6px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: white;
+        border: none;
+      }
+      .btn-primary:hover { background: #1e90ff; }
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+      }
+      .btn-secondary:hover { background: var(--bg-hover); }
+      /* Search Dialog */
+      .search-dialog {
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        width: 300px;
+      }
+      .search-dialog.hidden { display: none; }
+      .search-dialog-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 13px;
+      }
+      .search-dialog-input:focus { outline: none; border-color: var(--accent); }
+      .search-dialog-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .search-dialog-nav button {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 2px 8px;
+        border-radius: 3px;
+        cursor: pointer;
+        margin-left: 4px;
+      }
+      .search-dialog-nav button:hover { background: var(--bg-hover); }
+      .search-dialog-nav button:disabled { opacity: 0.5; cursor: not-allowed; }
+      td.search-match { background: rgba(255, 200, 0, 0.3); }
+      td.search-current { background: rgba(255, 200, 0, 0.6); outline: 2px solid #ffcc00; }
+      /* Jump to Row Dialog */
+      .jump-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 16px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        width: 260px;
+      }
+      .jump-dialog.hidden { display: none; }
+      .jump-dialog-title {
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+      }
+      .jump-dialog-input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 14px;
+        text-align: center;
+      }
+      .jump-dialog-input:focus { outline: none; border-color: var(--accent); }
+      .jump-dialog-hint {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--text-muted);
+        text-align: center;
       }
       .toolbar {
         height: 44px;
@@ -495,14 +786,68 @@ export class ViewerPanel {
     <div class="toolbar">
       <span class="toolbar-title" id="title">📊 Loading...</span>
       <input type="text" class="search-input" id="search" placeholder="Search...">
+      <button class="toolbar-btn" id="select-vars">☰ Variables</button>
       <button class="toolbar-btn" id="refresh">⟳ Refresh</button>
     </div>
     <div class="filter-chips-container hidden" id="filter-chips"></div>
-    <div class="main" id="main">
-      <div class="loading">Loading data...</div>
+    <div class="content-wrapper">
+      <div class="main-panel">
+        <div class="main" id="main">
+          <div class="loading">Loading data...</div>
+        </div>
+      </div>
+      <div class="freq-panel hidden" id="freq-panel">
+        <div class="freq-panel-header">
+          <span class="freq-panel-title" id="freq-title">Frequency</span>
+          <button class="freq-panel-close" id="freq-close">×</button>
+        </div>
+        <div class="freq-panel-content" id="freq-content"></div>
+      </div>
     </div>
     <div class="status-bar">
       <span id="status">Ready</span>
+    </div>
+    
+    <!-- Variable Selector Modal -->
+    <div class="modal-overlay hidden" id="var-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">Select Variables</span>
+          <button class="modal-close" id="var-modal-close">×</button>
+        </div>
+        <div class="modal-body">
+          <input type="text" class="var-search" id="var-search" placeholder="Search variables...">
+          <div class="var-actions">
+            <button id="var-select-all">Select All</button>
+            <button id="var-select-none">Select None</button>
+          </div>
+          <div class="var-list" id="var-list"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="var-cancel">Cancel</button>
+          <button class="btn-primary" id="var-apply">Apply</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Search Dialog (Ctrl+F) -->
+    <div class="search-dialog hidden" id="search-dialog">
+      <input type="text" class="search-dialog-input" id="search-dialog-input" placeholder="Find in table...">
+      <div class="search-dialog-info">
+        <span id="search-dialog-count">0 matches</span>
+        <div class="search-dialog-nav">
+          <button id="search-prev">↑</button>
+          <button id="search-next">↓</button>
+          <button id="search-close">×</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Jump to Row Dialog (Ctrl+G) -->
+    <div class="jump-dialog hidden" id="jump-dialog">
+      <div class="jump-dialog-title">Go to Row</div>
+      <input type="number" class="jump-dialog-input" id="jump-input" placeholder="Row number">
+      <div class="jump-dialog-hint">Press Enter to jump, Esc to cancel</div>
     </div>
 
     <script nonce="${nonce}">
@@ -521,6 +866,43 @@ export class ViewerPanel {
         const searchEl = document.getElementById('search');
         const refreshBtn = document.getElementById('refresh');
         const filterChipsEl = document.getElementById('filter-chips');
+        
+        // Frequency panel elements
+        const freqPanel = document.getElementById('freq-panel');
+        const freqTitle = document.getElementById('freq-title');
+        const freqContent = document.getElementById('freq-content');
+        const freqCloseBtn = document.getElementById('freq-close');
+        
+        // Variable selector elements
+        const varModal = document.getElementById('var-modal');
+        const varList = document.getElementById('var-list');
+        const varSearch = document.getElementById('var-search');
+        const selectVarsBtn = document.getElementById('select-vars');
+        const varModalCloseBtn = document.getElementById('var-modal-close');
+        const varSelectAllBtn = document.getElementById('var-select-all');
+        const varSelectNoneBtn = document.getElementById('var-select-none');
+        const varCancelBtn = document.getElementById('var-cancel');
+        const varApplyBtn = document.getElementById('var-apply');
+        
+        // Variable selection state
+        let selectedVariables = [];
+        let variableOrder = [];
+        
+        // Search dialog elements
+        const searchDialog = document.getElementById('search-dialog');
+        const searchDialogInput = document.getElementById('search-dialog-input');
+        const searchDialogCount = document.getElementById('search-dialog-count');
+        const searchPrevBtn = document.getElementById('search-prev');
+        const searchNextBtn = document.getElementById('search-next');
+        const searchCloseBtn = document.getElementById('search-close');
+        
+        // Search state
+        let searchMatches = [];  // Array of {rowIndex, columnIndex}
+        let currentMatchIndex = -1;
+        
+        // Jump dialog elements
+        const jumpDialog = document.getElementById('jump-dialog');
+        const jumpInput = document.getElementById('jump-input');
 
         // Render table
         function renderTable(data) {
@@ -897,8 +1279,50 @@ export class ViewerPanel {
             return;
           }
           
-          // Esc key - Clear filters and selection
+          // Ctrl+F - Open search dialog
+          if ((e.key === 'f' || e.key === 'F') && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            openSearchDialog();
+            return;
+          }
+          
+          // Ctrl+G - Open jump to row dialog
+          if ((e.key === 'g' || e.key === 'G') && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            openJumpDialog();
+            return;
+          }
+          
+          // F key - Show frequency panel (requires selected cell)
+          if ((e.key === 'f' || e.key === 'F') && selectedCell && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            showFrequencyPanel(selectedCell.columnName, selectedCell.columnIndex);
+            return;
+          }
+          
+          // Esc key - Clear filters and selection, close panels
           if (e.key === 'Escape') {
+            // Close jump dialog if open
+            if (!jumpDialog.classList.contains('hidden')) {
+              jumpDialog.classList.add('hidden');
+              return;
+            }
+            // Close search dialog if open
+            if (!searchDialog.classList.contains('hidden')) {
+              closeSearchDialog();
+              return;
+            }
+            // Close frequency panel if open
+            if (!freqPanel.classList.contains('hidden')) {
+              freqPanel.classList.add('hidden');
+              return;
+            }
+            // Close variable selector if open
+            if (!varModal.classList.contains('hidden')) {
+              varModal.classList.add('hidden');
+              return;
+            }
+            // Clear filters and selection
             quickFilterState = { enabled: false, filters: [], logic: 'AND' };
             selectedCell = null;
             filteredRows = null;
@@ -982,6 +1406,430 @@ export class ViewerPanel {
           }
         }
 
+        // ===============================
+        // Frequency Panel Functions
+        // ===============================
+        function showFrequencyPanel(columnName, columnIndex) {
+          const column = currentData.columns[columnIndex];
+          const rows = filteredRows || currentData.rows;
+          
+          // Extract column values
+          const values = rows.map(row => Array.isArray(row) ? row[columnIndex] : row[columnName]);
+          
+          freqTitle.textContent = 'Frequency: ' + columnName;
+          
+          // Generate stats based on column type
+          if (column.type === 'numeric' || column.type === 'integer') {
+            freqContent.innerHTML = renderNumericStats(values, columnName);
+          } else {
+            freqContent.innerHTML = renderFrequencyTable(values, columnName);
+          }
+          
+          // Add click handlers to frequency rows
+          const freqRows = freqContent.querySelectorAll('tr[data-value]');
+          freqRows.forEach(row => {
+            row.addEventListener('click', function() {
+              const value = this.getAttribute('data-value');
+              // Add filter for this value
+              quickFilterState.filters = [{
+                columnName: columnName,
+                operator: 'eq',
+                value: value === 'NA' ? null : value
+              }];
+              quickFilterState.enabled = true;
+              applyQuickFiltersAndRender();
+            });
+          });
+          
+          freqPanel.classList.remove('hidden');
+        }
+        
+        function renderNumericStats(values, columnName) {
+          const validValues = values.filter(v => v !== null && v !== undefined && !isNaN(v));
+          const n = validValues.length;
+          const missing = values.length - n;
+          
+          if (n === 0) {
+            return '<div class="numeric-stats"><p>No valid numeric values</p></div>';
+          }
+          
+          const sorted = [...validValues].sort((a, b) => a - b);
+          const sum = validValues.reduce((a, b) => a + b, 0);
+          const mean = sum / n;
+          const min = sorted[0];
+          const max = sorted[n - 1];
+          const median = n % 2 === 0 ? (sorted[n/2 - 1] + sorted[n/2]) / 2 : sorted[Math.floor(n/2)];
+          const q1 = sorted[Math.floor(n * 0.25)];
+          const q3 = sorted[Math.floor(n * 0.75)];
+          
+          // Standard deviation
+          const variance = validValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / (n - 1);
+          const std = Math.sqrt(variance);
+          
+          return '<div class="numeric-stats">' +
+            '<div class="stat-row"><span class="stat-label">N</span><span class="stat-value">' + n + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Missing</span><span class="stat-value">' + missing + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Mean</span><span class="stat-value">' + mean.toFixed(4) + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Std Dev</span><span class="stat-value">' + std.toFixed(4) + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Min</span><span class="stat-value">' + min + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Q1 (25%)</span><span class="stat-value">' + q1 + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Median</span><span class="stat-value">' + median.toFixed(4) + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Q3 (75%)</span><span class="stat-value">' + q3 + '</span></div>' +
+            '<div class="stat-row"><span class="stat-label">Max</span><span class="stat-value">' + max + '</span></div>' +
+            '</div>';
+        }
+        
+        function renderFrequencyTable(values, columnName) {
+          // Count frequencies
+          const counts = {};
+          values.forEach(v => {
+            const key = v === null || v === undefined ? 'NA' : String(v);
+            counts[key] = (counts[key] || 0) + 1;
+          });
+          
+          // Sort by count descending
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+          const total = values.length;
+          
+          let html = '<table class="freq-table"><thead><tr>' +
+            '<th>Value</th><th>Count</th><th>%</th>' +
+            '</tr></thead><tbody>';
+          
+          sorted.forEach(([value, count]) => {
+            const percent = ((count / total) * 100).toFixed(1);
+            html += '<tr data-value="' + escapeHtml(value) + '">' +
+              '<td class="freq-value">' + escapeHtml(value) + '</td>' +
+              '<td class="freq-count">' + count + '</td>' +
+              '<td class="freq-percent">' + percent + '%</td>' +
+              '</tr>';
+          });
+          
+          html += '</tbody></table>';
+          return html;
+        }
+        
+        // Close frequency panel
+        freqCloseBtn.addEventListener('click', function() {
+          freqPanel.classList.add('hidden');
+        });
+
+        // ===============================
+        // Variable Selector Functions
+        // ===============================
+        function openVariableSelector() {
+          if (!currentData) return;
+          
+          // Initialize selected variables if not set
+          if (selectedVariables.length === 0) {
+            selectedVariables = currentData.columns.map(c => c.name);
+            variableOrder = [...selectedVariables];
+          }
+          
+          renderVariableList();
+          varModal.classList.remove('hidden');
+        }
+        
+        function renderVariableList(searchQuery) {
+          const query = (searchQuery || '').toLowerCase();
+          
+          let html = '';
+          variableOrder.forEach((varName, idx) => {
+            const col = currentData.columns.find(c => c.name === varName);
+            if (!col) return;
+            
+            // Filter by search query
+            if (query && !varName.toLowerCase().includes(query)) return;
+            
+            const isSelected = selectedVariables.includes(varName);
+            const typeIcon = col.type === 'numeric' || col.type === 'integer' ? '#' : 
+                           col.type === 'factor' ? '◆' : 'A';
+            
+            html += '<div class="var-item' + (isSelected ? ' selected' : '') + '" data-var="' + escapeHtml(varName) + '" data-idx="' + idx + '">' +
+              '<span class="var-drag-handle">⋮⋮</span>' +
+              '<input type="checkbox" ' + (isSelected ? 'checked' : '') + '>' +
+              '<span class="var-name">' + escapeHtml(varName) + '</span>' +
+              '<span class="var-type">' + typeIcon + ' ' + col.type + '</span>' +
+              '</div>';
+          });
+          
+          varList.innerHTML = html;
+          
+          // Add event handlers
+          const items = varList.querySelectorAll('.var-item');
+          items.forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            const varName = item.getAttribute('data-var');
+            
+            checkbox.addEventListener('change', function() {
+              if (this.checked) {
+                if (!selectedVariables.includes(varName)) {
+                  selectedVariables.push(varName);
+                }
+                item.classList.add('selected');
+              } else {
+                selectedVariables = selectedVariables.filter(v => v !== varName);
+                item.classList.remove('selected');
+              }
+            });
+            
+            // Drag and drop for reordering
+            item.setAttribute('draggable', 'true');
+            item.addEventListener('dragstart', function(e) {
+              e.dataTransfer.setData('text/plain', item.getAttribute('data-idx'));
+              item.style.opacity = '0.5';
+            });
+            item.addEventListener('dragend', function() {
+              item.style.opacity = '1';
+            });
+            item.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              item.style.borderTop = '2px solid var(--accent)';
+            });
+            item.addEventListener('dragleave', function() {
+              item.style.borderTop = '';
+            });
+            item.addEventListener('drop', function(e) {
+              e.preventDefault();
+              item.style.borderTop = '';
+              const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+              const toIdx = parseInt(item.getAttribute('data-idx'));
+              
+              if (fromIdx !== toIdx) {
+                const movedVar = variableOrder.splice(fromIdx, 1)[0];
+                variableOrder.splice(toIdx, 0, movedVar);
+                renderVariableList(varSearch.value);
+              }
+            });
+          });
+        }
+        
+        // Variable selector event handlers
+        selectVarsBtn.addEventListener('click', openVariableSelector);
+        
+        varModalCloseBtn.addEventListener('click', function() {
+          varModal.classList.add('hidden');
+        });
+        
+        varSearch.addEventListener('input', function() {
+          renderVariableList(this.value);
+        });
+        
+        varSelectAllBtn.addEventListener('click', function() {
+          selectedVariables = [...variableOrder];
+          renderVariableList(varSearch.value);
+        });
+        
+        varSelectNoneBtn.addEventListener('click', function() {
+          selectedVariables = [];
+          renderVariableList(varSearch.value);
+        });
+        
+        varCancelBtn.addEventListener('click', function() {
+          varModal.classList.add('hidden');
+        });
+        
+        // ===============================
+        // Search Dialog Functions
+        // ===============================
+        function openSearchDialog() {
+          searchDialog.classList.remove('hidden');
+          searchDialogInput.focus();
+          searchDialogInput.select();
+        }
+        
+        function closeSearchDialog() {
+          searchDialog.classList.add('hidden');
+          clearSearchHighlights();
+          searchMatches = [];
+          currentMatchIndex = -1;
+        }
+        
+        function performSearch(query) {
+          clearSearchHighlights();
+          searchMatches = [];
+          currentMatchIndex = -1;
+          
+          if (!query || !currentData) {
+            searchDialogCount.textContent = '0 matches';
+            return;
+          }
+          
+          const rows = filteredRows || currentData.rows;
+          const lowerQuery = query.toLowerCase();
+          
+          rows.forEach((row, rowIdx) => {
+            currentData.columns.forEach((col, colIdx) => {
+              const value = Array.isArray(row) ? row[colIdx] : row[col.name];
+              if (value !== null && value !== undefined) {
+                if (String(value).toLowerCase().includes(lowerQuery)) {
+                  searchMatches.push({ rowIndex: rowIdx, columnIndex: colIdx });
+                }
+              }
+            });
+          });
+          
+          searchDialogCount.textContent = searchMatches.length + ' match' + (searchMatches.length !== 1 ? 'es' : '');
+          
+          if (searchMatches.length > 0) {
+            currentMatchIndex = 0;
+            highlightMatches();
+            goToMatch(0);
+          }
+        }
+        
+        function highlightMatches() {
+          searchMatches.forEach((match, idx) => {
+            const cell = mainEl.querySelector('td[data-row="' + match.rowIndex + '"][data-col="' + match.columnIndex + '"]');
+            if (cell) {
+              cell.classList.add('search-match');
+              if (idx === currentMatchIndex) {
+                cell.classList.add('search-current');
+              }
+            }
+          });
+        }
+        
+        function clearSearchHighlights() {
+          const highlighted = mainEl.querySelectorAll('.search-match, .search-current');
+          highlighted.forEach(el => {
+            el.classList.remove('search-match', 'search-current');
+          });
+        }
+        
+        function goToMatch(index) {
+          if (searchMatches.length === 0) return;
+          
+          // Clear previous current highlight
+          const prevCurrent = mainEl.querySelector('.search-current');
+          if (prevCurrent) prevCurrent.classList.remove('search-current');
+          
+          currentMatchIndex = index;
+          if (currentMatchIndex < 0) currentMatchIndex = searchMatches.length - 1;
+          if (currentMatchIndex >= searchMatches.length) currentMatchIndex = 0;
+          
+          const match = searchMatches[currentMatchIndex];
+          const cell = mainEl.querySelector('td[data-row="' + match.rowIndex + '"][data-col="' + match.columnIndex + '"]');
+          if (cell) {
+            cell.classList.add('search-current');
+            cell.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+          }
+          
+          searchDialogCount.textContent = (currentMatchIndex + 1) + ' of ' + searchMatches.length;
+        }
+        
+        // Search dialog event handlers
+        searchDialogInput.addEventListener('input', function() {
+          performSearch(this.value);
+        });
+        
+        searchDialogInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            if (e.shiftKey) {
+              goToMatch(currentMatchIndex - 1);
+            } else {
+              goToMatch(currentMatchIndex + 1);
+            }
+          }
+          if (e.key === 'Escape') {
+            closeSearchDialog();
+          }
+        });
+        
+        searchPrevBtn.addEventListener('click', function() {
+          goToMatch(currentMatchIndex - 1);
+        });
+        
+        searchNextBtn.addEventListener('click', function() {
+          goToMatch(currentMatchIndex + 1);
+        });
+        
+        searchCloseBtn.addEventListener('click', closeSearchDialog);
+
+        // ===============================
+        // Jump to Row Functions
+        // ===============================
+        function openJumpDialog() {
+          if (!currentData) return;
+          const rows = filteredRows || currentData.rows;
+          jumpInput.setAttribute('max', rows.length);
+          jumpInput.setAttribute('min', '1');
+          jumpInput.value = '';
+          jumpDialog.classList.remove('hidden');
+          jumpInput.focus();
+        }
+        
+        jumpInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            const rowNum = parseInt(this.value);
+            const rows = filteredRows || currentData.rows;
+            
+            if (isNaN(rowNum) || rowNum < 1 || rowNum > rows.length) {
+              this.style.borderColor = '#f44336';
+              return;
+            }
+            
+            this.style.borderColor = '';
+            jumpDialog.classList.add('hidden');
+            
+            // Select first cell of that row
+            const rowIndex = rowNum - 1;
+            const colIndex = selectedCell ? selectedCell.columnIndex : 0;
+            handleCellClick(rowIndex, colIndex);
+            scrollToCell(rowIndex, colIndex);
+          }
+          if (e.key === 'Escape') {
+            jumpDialog.classList.add('hidden');
+          }
+        });
+
+        varApplyBtn.addEventListener('click', function() {
+          if (selectedVariables.length === 0) {
+            alert('Please select at least one variable');
+            return;
+          }
+          
+          // Reorder columns based on selection
+          const newColumns = [];
+          const newRows = currentData.rows.map(row => {
+            const newRow = [];
+            variableOrder.forEach(varName => {
+              if (selectedVariables.includes(varName)) {
+                const colIdx = currentData.columns.findIndex(c => c.name === varName);
+                if (colIdx !== -1) {
+                  if (newColumns.length < selectedVariables.length) {
+                    newColumns.push({ ...currentData.columns[colIdx], index: newColumns.length });
+                  }
+                  newRow.push(Array.isArray(row) ? row[colIdx] : row[varName]);
+                }
+              }
+            });
+            return newRow;
+          });
+          
+          // Update current data
+          currentData = {
+            ...currentData,
+            columns: newColumns,
+            rows: newRows,
+            totalColumns: newColumns.length
+          };
+          
+          // Reset states
+          filteredRows = null;
+          sortState = { columns: [] };
+          quickFilterState = { enabled: false, filters: [], logic: 'AND' };
+          selectedCell = null;
+          
+          // Re-render
+          renderFilterChips();
+          renderTable(currentData);
+          updateStatus();
+          
+          varModal.classList.add('hidden');
+        });
+
         // Handle messages from extension
         window.addEventListener('message', function(event) {
           const message = event.data;
@@ -990,7 +1838,13 @@ export class ViewerPanel {
               currentData = message.payload;
               filteredRows = null;
               sortState = { columns: [] };  // Reset sort on new data
+              quickFilterState = { enabled: false, filters: [], logic: 'AND' };
+              selectedCell = null;
+              // Initialize variable selection
+              selectedVariables = currentData.columns.map(c => c.name);
+              variableOrder = [...selectedVariables];
               titleEl.textContent = '📊 ' + currentData.name;
+              renderFilterChips();
               renderTable(currentData);
               updateStatus();
               break;
