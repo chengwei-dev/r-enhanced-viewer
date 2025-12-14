@@ -156,13 +156,19 @@ export class REViewerServer {
         const parseTime = Date.now() - startTime;
 
         console.log(`✓ Received "${dataFrame.name}": ${dataFrame.totalRows} rows × ${dataFrame.totalColumns} cols (parsed in ${parseTime}ms)`);
+        console.log('Data columns:', dataFrame.columns.map(c => c.name));
+        console.log('First row:', dataFrame.rows[0]);
 
         // Emit event for the extension to handle
         eventBus.emit('data:loaded', { data: dataFrame });
 
         // Call the callback if set
         if (this.onDataReceived) {
+          console.log('Calling onDataReceived callback...');
           this.onDataReceived(dataFrame);
+          console.log('onDataReceived callback completed');
+        } else {
+          console.warn('Warning: onDataReceived callback is not set!');
         }
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -318,4 +324,9 @@ export function getServerInstance(): REViewerServer | null {
 export function setServerInstance(server: REViewerServer): void {
   serverInstance = server;
 }
+
+
+
+
+
 

@@ -110,9 +110,13 @@ REView <- function(x, name = NULL, port = 8765, include_labels = TRUE) {
   }
 
   # Build the payload
+  # Convert data frame to list of columns (column-oriented format)
+  # This ensures jsonlite serializes each column as an array
+  data_as_columns <- as.list(x_json)
+  
   payload <- list(
     name = name,
-    data = x_json,
+    data = data_as_columns,
     nrow = nrow(x),
     ncol = ncol(x),
     colnames = names(x),
@@ -252,4 +256,9 @@ iris %%>%% dplyr::filter(Sepal.Length > 5) %%>%% REView()
   cat(code)
   invisible(code)
 }
+
+
+
+
+
 

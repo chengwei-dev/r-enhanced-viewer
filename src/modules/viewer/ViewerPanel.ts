@@ -21,6 +21,7 @@ export class ViewerPanel {
   private dataFrameName: string;
   private disposables: vscode.Disposable[] = [];
   private pendingData: IDataFrame | null = null;
+  private hasReceivedData: boolean = false;  // Track if data was received via HTTP
 
   /**
    * Create or show viewer panel for a data frame
@@ -69,6 +70,9 @@ export class ViewerPanel {
     extensionUri: vscode.Uri,
     data: IDataFrame
   ): ViewerPanel {
+    console.log(`[ViewerPanel] createOrShowWithData called for "${data.name}"`);
+    console.log(`[ViewerPanel] Data has ${data.totalRows} rows, ${data.totalColumns} columns`);
+    
     const column = vscode.window.activeTextEditor
       ? vscode.window.activeTextEditor.viewColumn
       : undefined;
@@ -76,10 +80,15 @@ export class ViewerPanel {
     // Check if panel already exists for this data frame
     const existing = ViewerPanel.panels.get(data.name);
     if (existing) {
+      console.log(`[ViewerPanel] Found existing panel for "${data.name}"`);
       existing.panel.reveal(column);
+      existing.pendingData = data;  // Store data in case webview sends ready message
+      existing.hasReceivedData = true;  // Mark that we received data via HTTP
       existing.updateData(data);
       return existing;
     }
+    
+    console.log(`[ViewerPanel] Creating new panel for "${data.name}"`)
 
     // Create new panel
     const panel = vscode.window.createWebviewPanel(
@@ -115,6 +124,7 @@ export class ViewerPanel {
     this.extensionUri = extensionUri;
     this.dataFrameName = dataFrameName;
     this.pendingData = initialData || null;
+    this.hasReceivedData = !!initialData;  // Mark if we received data via HTTP
 
     // Set up the webview content
     this.panel.webview.html = this.getHtmlContent();
@@ -133,8 +143,9 @@ export class ViewerPanel {
     this.panel.onDidChangeViewState(
       (e) => {
         if (e.webviewPanel.visible) {
-          // Panel became visible, refresh data if no pending data
-          if (!this.pendingData) {
+          // Panel became visible, only load data if we don't have pending data
+          // and didn't receive data via HTTP
+          if (!this.pendingData && !this.hasReceivedData) {
             this.loadData();
           }
         }
@@ -216,13 +227,19 @@ export class ViewerPanel {
     switch (message.type) {
       case 'ready':
         // Webview is ready, send initial data
+        console.log(`[ViewerPanel] Webview ready. pendingData: ${!!this.pendingData}, hasReceivedData: ${this.hasReceivedData}`);
         if (this.pendingData) {
           // Use pending data from HTTP server
+          console.log(`[ViewerPanel] Sending pending data to webview`);
           this.updateData(this.pendingData);
           this.pendingData = null;
-        } else {
-          // Load data from dataProvider
+          // hasReceivedData stays true, so we won't call loadData later
+        } else if (!this.hasReceivedData) {
+          // Only load from dataProvider if we didn't receive data via HTTP
+          console.log(`[ViewerPanel] No pending data and not received via HTTP, calling loadData()`);
           await this.loadData();
+        } else {
+          console.log(`[ViewerPanel] No pending data but hasReceivedData is true, skipping loadData()`);
         }
         this.sendTheme();
         break;
@@ -1888,8 +1905,12 @@ export class ViewerPanel {
         // Handle messages from extension
         window.addEventListener('message', function(event) {
           const message = event.data;
+          console.log('[Webview] Received message:', message.type);
           switch (message.type) {
             case 'setData':
+              console.log('[Webview] setData payload:', JSON.stringify(message.payload, null, 2).substring(0, 500));
+              console.log('[Webview] columns:', message.payload.columns);
+              console.log('[Webview] rows sample:', message.payload.rows ? message.payload.rows.slice(0, 2) : 'no rows');
               currentData = message.payload;
               filteredRows = null;
               sortState = { columns: [] };  // Reset sort on new data

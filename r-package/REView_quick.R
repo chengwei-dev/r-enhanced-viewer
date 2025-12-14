@@ -51,9 +51,12 @@ REView <- function(x, name = NULL, port = 8765) {
   }
 
   # Build payload
+  # Convert data frame to list of columns (column-oriented format)
+  data_as_columns <- as.list(x_json)
+  
   payload <- jsonlite::toJSON(list(
     name = name,
-    data = x_json,
+    data = data_as_columns,
     nrow = nrow(x),
     ncol = ncol(x),
     colnames = names(x),
@@ -100,4 +103,9 @@ REView_check <- function(port = 8765) {
 message("\u2713 REView() function loaded")
 message("  Usage: REView(mtcars)")
 message("  Check: REView_check()")
+
+
+
+
+
 
