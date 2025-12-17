@@ -45,6 +45,20 @@ class DataProvider {
   }
 
   /**
+   * Check if R session is connected
+   */
+  isRSessionConnected(): boolean {
+    return rSession.isConnected();
+  }
+
+  /**
+   * Check if using mock data mode
+   */
+  isUsingMockData(): boolean {
+    return this.useMockData;
+  }
+
+  /**
    * Get list of available data frames
    * @returns Array of data frame metadata
    */
@@ -55,13 +69,18 @@ class DataProvider {
       return getMockDataFrameList();
     }
 
+    // Check if R session is connected
+    if (!rSession.isConnected()) {
+      throw new Error(
+        'R session not connected. Run reviewer_connect() in R, or use REView(df) directly.'
+      );
+    }
+
     try {
       return await rSession.listDataFrames();
     } catch (error) {
       console.error('Failed to list data frames:', error);
-      // Fallback to mock data if R session fails
-      console.log('Falling back to mock data');
-      return getMockDataFrameList();
+      throw error;
     }
   }
 
@@ -112,6 +131,13 @@ class DataProvider {
       return mockData;
     }
 
+    // Check if R session is connected
+    if (!rSession.isConnected()) {
+      const error = 'R session not connected. Run reviewer_connect() in R.';
+      eventBus.emit('data:error', { error });
+      throw new Error(error);
+    }
+
     try {
       const data = await rSession.getData(name, offset, limit, columns);
 
@@ -126,16 +152,6 @@ class DataProvider {
       return data;
     } catch (error) {
       eventBus.emit('data:error', { error: (error as Error).message });
-      
-      // Try to fallback to mock data
-      console.log('R session failed, attempting mock data fallback');
-      const mockData = getMockDataFrame(name);
-      if (mockData) {
-        console.log(`Using mock data for ${name}`);
-        eventBus.emit('data:loaded', { data: mockData });
-        return mockData;
-      }
-      
       throw error;
     }
   }

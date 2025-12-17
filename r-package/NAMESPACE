@@ -4,6 +4,12 @@ export(REView)
 export(REView_check)
 export(REView_code)
 
+# Bidirectional communication service
+export(reviewer_connect)
+export(reviewer_disconnect)
+export(reviewer_status)
+export(reviewer_poll)
+
 
 
 

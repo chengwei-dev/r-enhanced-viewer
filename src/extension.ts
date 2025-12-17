@@ -18,6 +18,10 @@ let extensionContext: vscode.ExtensionContext;
 // HTTP server for R communication
 let httpServer: REViewerServer | null = null;
 
+// Status bar items
+let serverStatusBarItem: vscode.StatusBarItem | null = null;
+let rSessionStatusBarItem: vscode.StatusBarItem | null = null;
+
 /**
  * Extension activation
  * Called when the extension is activated
@@ -60,19 +64,34 @@ async function startHttpServer(context: vscode.ExtensionContext): Promise<void> 
       ViewerPanel.createOrShowWithData(context.extensionUri, data);
     });
 
+    // Set R session status change callbacks
+    httpServer.setOnRSessionStatusChange(
+      () => updateRSessionStatus(true),
+      () => updateRSessionStatus(false)
+    );
+
     await httpServer.start();
     setServerInstance(httpServer);
     
-    // Show status bar item
-    const statusBarItem = vscode.window.createStatusBarItem(
+    // Create server status bar item
+    serverStatusBarItem = vscode.window.createStatusBarItem(
       vscode.StatusBarAlignment.Right,
       100
     );
-    statusBarItem.text = `$(broadcast) REViewer: ${httpServer.getPort()}`;
-    statusBarItem.tooltip = `REViewer listening on port ${httpServer.getPort()}\nUse REView(df) in R to view data`;
-    statusBarItem.command = 'reviewer.showServerInfo';
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
+    serverStatusBarItem.text = `$(broadcast) REViewer: ${httpServer.getPort()}`;
+    serverStatusBarItem.tooltip = `REViewer listening on port ${httpServer.getPort()}\nUse REView(df) in R to view data`;
+    serverStatusBarItem.command = 'reviewer.showServerInfo';
+    serverStatusBarItem.show();
+    context.subscriptions.push(serverStatusBarItem);
+
+    // Create R session status bar item
+    rSessionStatusBarItem = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Right,
+      99
+    );
+    updateRSessionStatus(false);
+    rSessionStatusBarItem.show();
+    context.subscriptions.push(rSessionStatusBarItem);
 
     console.log(`✓ REViewer HTTP server started on port ${httpServer.getPort()}`);
   } catch (error) {
@@ -81,6 +100,24 @@ async function startHttpServer(context: vscode.ExtensionContext): Promise<void> 
       `REViewer: HTTP server failed to start. REView() from R will not work. Error: ${(error as Error).message}`
     );
   }
+}
+
+/**
+ * Update R session status in status bar
+ */
+function updateRSessionStatus(connected: boolean): void {
+  if (!rSessionStatusBarItem) return;
+  
+  if (connected) {
+    rSessionStatusBarItem.text = '$(check) R Connected';
+    rSessionStatusBarItem.tooltip = 'R session connected. Ready to use Cmd+Shift+P → View Data Frame';
+    rSessionStatusBarItem.backgroundColor = undefined;
+  } else {
+    rSessionStatusBarItem.text = '$(plug) R Disconnected';
+    rSessionStatusBarItem.tooltip = 'Click to see how to connect R session';
+    rSessionStatusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+  }
+  rSessionStatusBarItem.command = 'reviewer.showConnectionHelp';
 }
 
 /**
@@ -104,6 +141,23 @@ function registerCommands(context: vscode.ExtensionContext): void {
   const viewDataFrameCmd = vscode.commands.registerCommand(
     'reviewer.viewDataFrame',
     async () => {
+      // Check if R session is connected
+      if (!dataProvider.isRSessionConnected() && !dataProvider.isUsingMockData()) {
+        const action = await vscode.window.showWarningMessage(
+          'R session not connected. Connect R first or use REView(df) directly.',
+          'Show How to Connect',
+          'Use Mock Data'
+        );
+        
+        if (action === 'Show How to Connect') {
+          vscode.commands.executeCommand('reviewer.showConnectionHelp');
+        } else if (action === 'Use Mock Data') {
+          // Temporarily use mock data
+          ViewerPanel.createOrShow(context.extensionUri, 'mtcars');
+        }
+        return;
+      }
+
       // Get list of available data frames
       try {
         const dataFrames = await dataProvider.listDataFrames();
@@ -232,7 +286,87 @@ REView <- function(x, port = ${port}) {
     }
   );
 
-  context.subscriptions.push(viewDataFrameCmd, refreshViewCmd, viewVariableCmd, showServerInfoCmd);
+  // Command: Show Connection Help
+  const showConnectionHelpCmd = vscode.commands.registerCommand(
+    'reviewer.showConnectionHelp',
+    async () => {
+      const port = httpServer?.getPort() || 8765;
+      
+      const panel = vscode.window.createWebviewPanel(
+        'reviewerConnectionHelp',
+        'REViewer: Connect R',
+        vscode.ViewColumn.One,
+        { enableScripts: false }
+      );
+      
+      panel.webview.html = getConnectionHelpHtml(port);
+    }
+  );
+
+  context.subscriptions.push(
+    viewDataFrameCmd, 
+    refreshViewCmd, 
+    viewVariableCmd, 
+    showServerInfoCmd,
+    showConnectionHelpCmd
+  );
+}
+
+/**
+ * Get HTML for connection help webview
+ */
+function getConnectionHelpHtml(port: number): string {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: var(--vscode-font-family); padding: 20px; line-height: 1.6; }
+    h1 { color: var(--vscode-textLink-foreground); }
+    code { background: var(--vscode-textBlockQuote-background); padding: 2px 6px; border-radius: 3px; }
+    pre { background: var(--vscode-textBlockQuote-background); padding: 15px; border-radius: 5px; overflow-x: auto; }
+    .method { margin: 20px 0; padding: 15px; border-left: 3px solid var(--vscode-textLink-foreground); }
+    .method h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>How to View R Data in REViewer</h1>
+  
+  <div class="method">
+    <h2>Method 1: REView() Function (Recommended)</h2>
+    <p>Directly send a data frame from R to VS Code:</p>
+    <pre>
+# Source the REView function
+source("r-package/R/REView.R")
+
+# View any data frame
+REView(mtcars)
+REView(iris)
+df %>% REView()
+    </pre>
+  </div>
+  
+  <div class="method">
+    <h2>Method 2: Connect R for Command Palette Access</h2>
+    <p>Enable the VS Code command palette to list your R data frames:</p>
+    <pre>
+# Source the service functions
+source("r-package/R/reviewer_service.R")
+
+# Connect to VS Code
+reviewer_connect(port = ${port})
+
+# Now use Cmd+Shift+P → "REViewer: View Data Frame"
+# to select from your workspace data frames
+    </pre>
+  </div>
+  
+  <div class="method">
+    <h2>Server Status</h2>
+    <p>REViewer HTTP server is listening on <strong>port ${port}</strong></p>
+    <p>Check R connection: <code>REView_check()</code></p>
+  </div>
+</body>
+</html>`;
 }
 
 /**

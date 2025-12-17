@@ -41,6 +41,11 @@
         "command": "reviewer.showServerInfo",
         "title": "Show Server Info & Get R Code",
         "category": "REViewer"
+      },
+      {
+        "command": "reviewer.showConnectionHelp",
+        "title": "How to Connect R",
+        "category": "REViewer"
       }
     ],
     "configuration": {

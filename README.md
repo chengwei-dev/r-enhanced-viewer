@@ -50,13 +50,27 @@ library(dplyr)
 iris %>% filter(Species == "setosa") %>% REView()
 ```
 
-#### Option 2: Command Palette
+#### Option 2: Command Palette (with R Connection)
 
-1. Open an R file in VS Code
-2. Load some data in R (e.g., `df <- mtcars`)
-3. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
-4. Run `REViewer: View Data Frame`
-5. Select a data frame from the list
+For GUI-based data frame selection, connect R first:
+
+```r
+# One-time setup
+install.packages(c("jsonlite", "httr", "later"))
+
+# Source the service
+source("path/to/r-package/R/reviewer_service.R")
+
+# Connect to VS Code
+reviewer_connect()
+# ✓ Connected to REViewer on port 8765
+# Use Cmd+Shift+P → 'REViewer: View Data Frame' in VS Code
+```
+
+Then in VS Code:
+1. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
+2. Run `REViewer: View Data Frame`
+3. Select a data frame from your R workspace
 
 ## Project Architecture
 

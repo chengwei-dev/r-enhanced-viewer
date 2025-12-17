@@ -1,11 +1,12 @@
 /**
  * HTTP Server for R Communication
  * Allows R to send data to the extension via REView() function
+ * Also handles bidirectional communication for GUI-based data frame viewing
  */
 
 import * as http from 'http';
 import * as vscode from 'vscode';
-import { IDataFrame, IColumnDef, RDataType } from './types';
+import { IDataFrame, IColumnDef, RDataType, IDataFrameMetadata } from './types';
 import { eventBus } from './eventBus';
 
 /**
@@ -22,14 +23,47 @@ interface RViewData {
 }
 
 /**
+ * R Session registration info
+ */
+interface RSessionInfo {
+  registeredAt: number;
+  lastHeartbeat: number;
+  rVersion?: string;
+  pid?: number;
+}
+
+/**
+ * Pending request from VS Code waiting for R response
+ */
+interface PendingRequest {
+  id: string;
+  type: 'listDataFrames' | 'getData';
+  params?: Record<string, unknown>;
+  createdAt: number;
+  resolve: (data: unknown) => void;
+  reject: (error: Error) => void;
+}
+
+/**
  * REViewer HTTP Server
  * Listens for data from R and opens viewer panels
+ * Also handles bidirectional communication for command palette
  */
 export class REViewerServer {
   private server: http.Server | null = null;
   private port: number;
   private extensionUri: vscode.Uri;
   private onDataReceived: ((data: IDataFrame) => void) | null = null;
+  
+  // R session tracking
+  private rSession: RSessionInfo | null = null;
+  private pendingRequests: Map<string, PendingRequest> = new Map();
+  private requestCounter = 0;
+  private requestTimeout = 30000; // 30 seconds
+  
+  // Callbacks for status changes
+  private onRSessionConnected: (() => void) | null = null;
+  private onRSessionDisconnected: (() => void) | null = null;
 
   constructor(extensionUri: vscode.Uri, port?: number) {
     this.extensionUri = extensionUri;
@@ -41,6 +75,88 @@ export class REViewerServer {
    */
   setOnDataReceived(callback: (data: IDataFrame) => void): void {
     this.onDataReceived = callback;
+  }
+
+  /**
+   * Set callback for R session connection status changes
+   */
+  setOnRSessionStatusChange(
+    onConnected: () => void,
+    onDisconnected: () => void
+  ): void {
+    this.onRSessionConnected = onConnected;
+    this.onRSessionDisconnected = onDisconnected;
+  }
+
+  /**
+   * Check if R session is connected
+   */
+  isRSessionConnected(): boolean {
+    if (!this.rSession) return false;
+    // Consider session disconnected if no heartbeat for 60 seconds
+    const timeout = 60000;
+    return Date.now() - this.rSession.lastHeartbeat < timeout;
+  }
+
+  /**
+   * Request data frames list from R
+   */
+  async requestDataFramesList(): Promise<IDataFrameMetadata[]> {
+    if (!this.isRSessionConnected()) {
+      throw new Error('R session not connected. Run reviewer_connect() in R.');
+    }
+
+    return new Promise((resolve, reject) => {
+      const id = `req_${++this.requestCounter}_${Date.now()}`;
+      const request: PendingRequest = {
+        id,
+        type: 'listDataFrames',
+        createdAt: Date.now(),
+        resolve: resolve as (data: unknown) => void,
+        reject,
+      };
+
+      this.pendingRequests.set(id, request);
+
+      // Set timeout
+      setTimeout(() => {
+        if (this.pendingRequests.has(id)) {
+          this.pendingRequests.delete(id);
+          reject(new Error('Request timeout'));
+        }
+      }, this.requestTimeout);
+    });
+  }
+
+  /**
+   * Request data frame data from R
+   */
+  async requestDataFrame(name: string): Promise<IDataFrame> {
+    if (!this.isRSessionConnected()) {
+      throw new Error('R session not connected. Run reviewer_connect() in R.');
+    }
+
+    return new Promise((resolve, reject) => {
+      const id = `req_${++this.requestCounter}_${Date.now()}`;
+      const request: PendingRequest = {
+        id,
+        type: 'getData',
+        params: { name },
+        createdAt: Date.now(),
+        resolve: resolve as (data: unknown) => void,
+        reject,
+      };
+
+      this.pendingRequests.set(id, request);
+
+      // Set timeout
+      setTimeout(() => {
+        if (this.pendingRequests.has(id)) {
+          this.pendingRequests.delete(id);
+          reject(new Error('Request timeout'));
+        }
+      }, this.requestTimeout);
+    });
   }
 
   /**
@@ -101,15 +217,60 @@ export class REViewerServer {
       return;
     }
 
+    const url = req.url || '';
+
     // Health check endpoint
-    if (req.method === 'GET' && req.url === '/health') {
+    if (req.method === 'GET' && url === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ status: 'ok', port: this.port }));
+      res.end(JSON.stringify({ 
+        status: 'ok', 
+        port: this.port,
+        rSessionConnected: this.isRSessionConnected()
+      }));
       return;
     }
 
-    // Main endpoint: POST /review
-    if (req.method === 'POST' && req.url === '/review') {
+    // R session status endpoint
+    if (req.method === 'GET' && url === '/status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        connected: this.isRSessionConnected(),
+        session: this.rSession ? {
+          registeredAt: this.rSession.registeredAt,
+          lastHeartbeat: this.rSession.lastHeartbeat,
+          rVersion: this.rSession.rVersion,
+        } : null,
+        pendingRequests: this.pendingRequests.size,
+      }));
+      return;
+    }
+
+    // R session registration endpoint
+    if (req.method === 'POST' && url === '/register') {
+      this.handleRegisterRequest(req, res);
+      return;
+    }
+
+    // R session heartbeat endpoint
+    if (req.method === 'POST' && url === '/heartbeat') {
+      this.handleHeartbeatRequest(req, res);
+      return;
+    }
+
+    // R polls for pending requests
+    if (req.method === 'GET' && url === '/pending') {
+      this.handlePendingRequest(req, res);
+      return;
+    }
+
+    // R responds to a request
+    if (req.method === 'POST' && url.startsWith('/respond/')) {
+      this.handleRespondRequest(req, res, url);
+      return;
+    }
+
+    // Main endpoint: POST /review (R sends data directly)
+    if (req.method === 'POST' && url === '/review') {
       this.handleReviewRequest(req, res);
       return;
     }
@@ -117,6 +278,126 @@ export class REViewerServer {
     // 404 for other routes
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
+  }
+
+  /**
+   * Handle R session registration
+   */
+  private handleRegisterRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+    let body = '';
+    req.on('data', (chunk) => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const data = body ? JSON.parse(body) : {};
+        
+        const wasConnected = this.isRSessionConnected();
+        
+        this.rSession = {
+          registeredAt: Date.now(),
+          lastHeartbeat: Date.now(),
+          rVersion: data.rVersion,
+          pid: data.pid,
+        };
+
+        console.log(`✓ R session registered (R ${data.rVersion || 'unknown'})`);
+        
+        if (!wasConnected && this.onRSessionConnected) {
+          this.onRSessionConnected();
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'registered', port: this.port }));
+      } catch (error) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: (error as Error).message }));
+      }
+    });
+  }
+
+  /**
+   * Handle R session heartbeat
+   */
+  private handleHeartbeatRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+    if (this.rSession) {
+      this.rSession.lastHeartbeat = Date.now();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok' }));
+    } else {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not registered' }));
+    }
+  }
+
+  /**
+   * Handle R polling for pending requests
+   */
+  private handlePendingRequest(req: http.IncomingMessage, res: http.ServerResponse): void {
+    // Update heartbeat
+    if (this.rSession) {
+      this.rSession.lastHeartbeat = Date.now();
+    }
+
+    // Find oldest pending request
+    let oldestRequest: PendingRequest | null = null;
+    for (const request of this.pendingRequests.values()) {
+      if (!oldestRequest || request.createdAt < oldestRequest.createdAt) {
+        oldestRequest = request;
+      }
+    }
+
+    if (oldestRequest) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        id: oldestRequest.id,
+        type: oldestRequest.type,
+        params: oldestRequest.params,
+      }));
+    } else {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ id: null }));
+    }
+  }
+
+  /**
+   * Handle R responding to a pending request
+   */
+  private handleRespondRequest(req: http.IncomingMessage, res: http.ServerResponse, url: string): void {
+    const requestId = url.replace('/respond/', '');
+    const pending = this.pendingRequests.get(requestId);
+
+    if (!pending) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Request not found or expired' }));
+      return;
+    }
+
+    let body = '';
+    req.on('data', (chunk) => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const response = JSON.parse(body);
+        
+        this.pendingRequests.delete(requestId);
+
+        if (response.error) {
+          pending.reject(new Error(response.error));
+        } else if (pending.type === 'listDataFrames') {
+          pending.resolve(response.data as IDataFrameMetadata[]);
+        } else if (pending.type === 'getData') {
+          const dataFrame = this.convertToDataFrame(response.data as RViewData);
+          pending.resolve(dataFrame);
+        } else {
+          pending.resolve(response.data);
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+      } catch (error) {
+        pending.reject(error as Error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: (error as Error).message }));
+      }
+    });
   }
 
   /**
