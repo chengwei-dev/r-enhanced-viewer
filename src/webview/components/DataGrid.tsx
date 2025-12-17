@@ -77,21 +77,45 @@ function getCellClass(value: CellValue, columnType: string): string {
 /**
  * DataGrid component
  */
+/**
+ * Highlight matching text in a string
+ */
+function highlightText(text: string, search: string): React.ReactNode {
+  if (!search || search.length < 1) {
+    return text;
+  }
+  
+  const parts = text.split(new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  
+  return parts.map((part, i) => 
+    part.toLowerCase() === search.toLowerCase() 
+      ? <mark key={i} className="search-highlight">{part}</mark>
+      : part
+  );
+}
+
 export const DataGrid: React.FC<IDataGridProps> = ({ data, onCopy }) => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const { sort, setSort, columnWidths, setColumnWidth } = useDataStore();
+  const { sort, setSort, columnWidths, setColumnWidth, hiddenColumns, filter } = useDataStore();
+  const searchTerm = filter.globalSearch || '';
 
   // Convert sort state
   const [sorting, setSorting] = React.useState<SortingState>(() =>
     sort.map((s) => ({ id: s.columnName, desc: s.direction === 'desc' }))
   );
 
+  // Filter visible columns
+  const visibleColumns = useMemo(() => {
+    return data.columns.filter((col) => !hiddenColumns.has(col.name));
+  }, [data.columns, hiddenColumns]);
+
   // Create column definitions
   const columns = useMemo(() => {
     const columnHelper = createColumnHelper<CellValue[]>();
 
-    return data.columns.map((col, index) =>
-      columnHelper.accessor((row) => row[index], {
+    return visibleColumns.map((col) => {
+      const originalIndex = data.columns.findIndex((c) => c.name === col.name);
+      return columnHelper.accessor((row) => row[originalIndex], {
         id: col.name,
         header: () => (
           <div className="column-header">
@@ -102,18 +126,21 @@ export const DataGrid: React.FC<IDataGridProps> = ({ data, onCopy }) => {
         ),
         cell: (info) => {
           const value = info.getValue();
+          const formattedValue = formatCellValue(value, col.type);
+          const shouldHighlight = searchTerm && value !== null && value !== undefined;
+          
           return (
             <span className={getCellClass(value, col.type)}>
-              {formatCellValue(value, col.type)}
+              {shouldHighlight ? highlightText(formattedValue, searchTerm) : formattedValue}
             </span>
           );
         },
         size: columnWidths[col.name] ?? 150,
         minSize: 50,
         maxSize: 500,
-      })
-    );
-  }, [data.columns, columnWidths]);
+      });
+    });
+  }, [visibleColumns, data.columns, columnWidths, searchTerm]);
 
   // Convert row data
   const rowData = useMemo(() => {

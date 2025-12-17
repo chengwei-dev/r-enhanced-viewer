@@ -93,6 +93,7 @@ const App: React.FC = () => {
         <div className="loading-container">
           <div className="loading-spinner" />
           <p>Loading data...</p>
+          <span className="loading-hint">Use REView(df) in R to send data</span>
         </div>
       </div>
     );
@@ -103,7 +104,21 @@ const App: React.FC = () => {
     return (
       <div className={`app ${theme}`}>
         <div className="empty-container">
-          <p>No data to display</p>
+          <div className="empty-icon">📊</div>
+          <h2>No Data Frame Loaded</h2>
+          <p>To view a data frame, use one of these methods:</p>
+          <div className="empty-instructions">
+            <div className="instruction-item">
+              <span className="instruction-number">1</span>
+              <code>REView(df)</code>
+              <span className="instruction-desc">Run in R console</span>
+            </div>
+            <div className="instruction-item">
+              <span className="instruction-number">2</span>
+              <span>Cmd+Shift+P</span>
+              <span className="instruction-desc">→ "View Data Frame"</span>
+            </div>
+          </div>
           <button onClick={handleRefresh}>Refresh</button>
         </div>
       </div>

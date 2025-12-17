@@ -436,6 +436,19 @@ body {
   font-style: italic;
 }
 
+/* Search highlight */
+.search-highlight {
+  background-color: rgba(255, 200, 0, 0.4);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+[data-theme="light"] .search-highlight,
+.light .search-highlight {
+  background-color: rgba(255, 200, 0, 0.6);
+}
+
 /* ============================================
    Status Bar
    ============================================ */
@@ -509,6 +522,12 @@ body {
   animation: spin 1s linear infinite;
 }
 
+.loading-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--spacing-sm);
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -552,6 +571,67 @@ body {
   background-color: var(--accent-hover);
 }
 
+/* Enhanced empty state */
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-container h2 {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.empty-container p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.empty-instructions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  background-color: var(--bg-secondary);
+  padding: var(--spacing-md);
+  border-radius: 8px;
+  margin-bottom: var(--spacing-md);
+}
+
+.instruction-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-md);
+}
+
+.instruction-number {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--accent-primary);
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.instruction-item code {
+  font-family: var(--font-mono);
+  background-color: var(--bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--cell-character);
+}
+
+.instruction-desc {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
 /* ============================================
    Scrollbar Styling
    ============================================ */
@@ -576,5 +656,136 @@ body {
 
 ::-webkit-scrollbar-corner {
   background: var(--bg-primary);
+}
+
+/* ============================================
+   Column Manager Dropdown
+   ============================================ */
+.column-manager-container {
+  position: relative;
+}
+
+.toolbar-btn.active {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.column-manager-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: var(--spacing-xs);
+  min-width: 250px;
+  max-width: 350px;
+  max-height: 400px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.column-manager-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-tertiary);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+}
+
+.show-all-btn {
+  padding: 2px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.show-all-btn:hover:not(:disabled) {
+  background-color: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+}
+
+.show-all-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.column-manager-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+}
+
+.column-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.column-checkbox:hover {
+  background-color: var(--bg-hover);
+}
+
+.column-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+.column-checkbox-name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.column-checkbox-type {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.column-checkbox-type.type-numeric,
+.column-checkbox-type.type-integer {
+  color: var(--cell-numeric);
+}
+
+.column-checkbox-type.type-character {
+  color: var(--cell-character);
+}
+
+.column-checkbox-type.type-factor {
+  color: var(--cell-factor);
+}
+
+.column-checkbox-type.type-logical {
+  color: var(--cell-logical);
+}
+
+.column-checkbox-type.type-Date,
+.column-checkbox-type.type-POSIXct {
+  color: var(--cell-date);
 }
 

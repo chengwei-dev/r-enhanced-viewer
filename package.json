@@ -1,9 +1,19 @@
 {
   "name": "r-enhanced-viewer",
-  "displayName": "R Enhanced Viewer",
-  "description": "Enhanced data frame viewer for R statistical programmers in pharmaceutical industry",
+  "displayName": "R Enhanced Viewer (REViewer)",
+  "description": "Enhanced data frame viewer for R - View R data frames with REView(df). Features virtual scrolling, sorting, search, and dark/light theme support.",
   "version": "0.1.0",
-  "publisher": "your-company",
+  "publisher": "chengwei-li",
+  "license": "MIT",
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chengwei/r-enhanced-viewer"
+  },
+  "bugs": {
+    "url": "https://github.com/chengwei/r-enhanced-viewer/issues"
+  },
+  "homepage": "https://github.com/chengwei/r-enhanced-viewer#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -19,8 +29,14 @@
     "pharmaceutical",
     "SDTM",
     "ADaM",
-    "clinical data"
+    "clinical data",
+    "data viewer",
+    "table viewer"
   ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -89,8 +105,8 @@
         },
         "reviewer.dev.useMockData": {
           "type": "boolean",
-          "default": true,
-          "description": "Use mock data for development (disable to use real R session)"
+          "default": false,
+          "description": "Use mock data for development/testing (normally disabled)"
         }
       }
     },
@@ -115,7 +131,7 @@
     "lint": "eslint src --ext ts,tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
-    "package": "vsce package"
+    "package": "npx --yes @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

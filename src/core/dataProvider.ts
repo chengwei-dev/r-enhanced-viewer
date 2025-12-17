@@ -32,14 +32,14 @@ class DataProvider {
   constructor() {
     const config = vscode.workspace.getConfiguration('reviewer');
     this.maxRowsPerRequest = config.get<number>('viewer.maxRowsInitialLoad', 10000);
-    this.useMockData = config.get<boolean>('dev.useMockData', true); // Default to true for development
+    this.useMockData = config.get<boolean>('dev.useMockData', false);
 
     // Watch for configuration changes
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('reviewer')) {
         const config = vscode.workspace.getConfiguration('reviewer');
         this.maxRowsPerRequest = config.get<number>('viewer.maxRowsInitialLoad', 10000);
-        this.useMockData = config.get<boolean>('dev.useMockData', true);
+        this.useMockData = config.get<boolean>('dev.useMockData', false);
       }
     });
   }
