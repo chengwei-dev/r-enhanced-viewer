@@ -131,7 +131,7 @@
     "lint": "eslint src --ext ts,tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
-    "package": "npx --yes @vscode/vsce package"
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

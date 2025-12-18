@@ -2,8 +2,8 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "build",
+      "type": "shell",
+      "command": "source ~/.nvm/nvm.sh && npm run build",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -12,20 +12,19 @@
       "label": "npm: build"
     },
     {
-      "type": "npm",
-      "script": "watch",
+      "type": "shell",
+      "command": "source ~/.nvm/nvm.sh && npm run watch",
       "isBackground": true,
       "group": "build",
       "problemMatcher": [],
       "label": "npm: watch"
     },
     {
-      "type": "npm",
-      "script": "lint",
+      "type": "shell",
+      "command": "source ~/.nvm/nvm.sh && npm run lint",
       "group": "test",
       "problemMatcher": [],
       "label": "npm: lint"
     }
   ]
 }
-

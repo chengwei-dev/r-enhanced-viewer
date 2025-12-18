@@ -508,7 +508,7 @@ export class ViewerPanel {
         border: 1px solid var(--border-color);
         border-radius: 8px;
         width: 500px;
-        max-height: 80vh;
+        max-height: 90vh;
         display: flex;
         flex-direction: column;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -562,7 +562,8 @@ export class ViewerPanel {
       .var-list {
         border: 1px solid var(--border-color);
         border-radius: 4px;
-        max-height: 300px;
+        max-height: 60vh;
+        min-height: 400px;
         overflow-y: auto;
       }
       .var-item {
@@ -1365,10 +1366,17 @@ export class ViewerPanel {
             return;
           }
           
-          // F key - Show frequency panel (requires selected cell)
+          // F key - Show frequency panel (requires selected cell) - always shows count/frequency table
           if ((e.key === 'f' || e.key === 'F') && selectedCell && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
-            showFrequencyPanel(selectedCell.columnName, selectedCell.columnIndex);
+            showFrequencyPanel(selectedCell.columnName, selectedCell.columnIndex, 'frequency');
+            return;
+          }
+          
+          // M key - Show means/statistics panel for numeric columns (requires selected cell)
+          if ((e.key === 'm' || e.key === 'M') && selectedCell && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            showFrequencyPanel(selectedCell.columnName, selectedCell.columnIndex, 'means');
             return;
           }
           
@@ -1481,37 +1489,45 @@ export class ViewerPanel {
         // ===============================
         // Frequency Panel Functions
         // ===============================
-        function showFrequencyPanel(columnName, columnIndex) {
+        // mode: 'frequency' for count table (F key), 'means' for statistics (M key)
+        function showFrequencyPanel(columnName, columnIndex, mode) {
           const column = currentData.columns[columnIndex];
           const rows = filteredRows || currentData.rows;
+          const isNumeric = column.type === 'numeric' || column.type === 'integer';
           
           // Extract column values
           const values = rows.map(row => Array.isArray(row) ? row[columnIndex] : row[columnName]);
           
-          freqTitle.textContent = 'Frequency: ' + columnName;
-          
-          // Generate stats based on column type
-          if (column.type === 'numeric' || column.type === 'integer') {
-            freqContent.innerHTML = renderNumericStats(values, columnName);
+          if (mode === 'means') {
+            // M key: Show statistics (only for numeric columns)
+            if (!isNumeric) {
+              freqTitle.textContent = 'Statistics: ' + columnName;
+              freqContent.innerHTML = '<div class="numeric-stats"><p style="color: var(--text-muted);">Statistics are only available for numeric columns.<br>Press <strong>F</strong> to view frequency counts instead.</p></div>';
+            } else {
+              freqTitle.textContent = 'Statistics: ' + columnName + ' (proc means)';
+              freqContent.innerHTML = renderNumericStats(values, columnName);
+            }
           } else {
+            // F key: Always show frequency table (like R count())
+            freqTitle.textContent = 'Frequency: ' + columnName + ' (count)';
             freqContent.innerHTML = renderFrequencyTable(values, columnName);
-          }
-          
-          // Add click handlers to frequency rows
-          const freqRows = freqContent.querySelectorAll('tr[data-value]');
-          freqRows.forEach(row => {
-            row.addEventListener('click', function() {
-              const value = this.getAttribute('data-value');
-              // Add filter for this value
-              quickFilterState.filters = [{
-                columnName: columnName,
-                operator: 'eq',
-                value: value === 'NA' ? null : value
-              }];
-              quickFilterState.enabled = true;
-              applyQuickFiltersAndRender();
+            
+            // Add click handlers to frequency rows for filtering
+            const freqRows = freqContent.querySelectorAll('tr[data-value]');
+            freqRows.forEach(row => {
+              row.addEventListener('click', function() {
+                const value = this.getAttribute('data-value');
+                // Add filter for this value
+                quickFilterState.filters = [{
+                  columnName: columnName,
+                  operator: 'eq',
+                  value: value === 'NA' ? null : value
+                }];
+                quickFilterState.enabled = true;
+                applyQuickFiltersAndRender();
+              });
             });
-          });
+          }
           
           freqPanel.classList.remove('hidden');
         }

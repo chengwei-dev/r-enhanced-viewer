@@ -1,0 +1,21 @@
+r-enhanced-viewer@0.1.0 /Users/chengwei/Documents/vibe_coding/R_Enhanced_Viewer
+├── @tanstack/react-table@8.21.3
+├── @tanstack/react-virtual@3.13.13
+├── @types/node@20.19.25
+├── @types/react-dom@18.3.7
+├── @types/react@18.3.27
+├── @types/vscode@1.106.1
+├── @typescript-eslint/eslint-plugin@6.21.0
+├── @typescript-eslint/parser@6.21.0
+├── @vitejs/plugin-react@4.7.0
+├── concurrently@8.2.2
+├── esbuild@0.19.12
+├── eslint@8.57.1
+├── prettier@3.7.4
+├── react-dom@18.3.1
+├── react@18.3.1
+├── typescript@5.9.3
+├── vite@5.4.21
+├── vitest@1.6.1
+└── zustand@4.5.7
+
