@@ -414,15 +414,32 @@ export class ViewerPanel {
         overflow: hidden;
       }
       /* Frequency Panel Styles */
+      .freq-panel-wrapper {
+        display: flex;
+        position: relative;
+      }
+      .freq-panel-wrapper.hidden { display: none; }
+      .freq-panel-resizer {
+        width: 5px;
+        background: var(--border-color);
+        cursor: col-resize;
+        flex-shrink: 0;
+        transition: background 0.15s;
+      }
+      .freq-panel-resizer:hover,
+      .freq-panel-resizer.dragging {
+        background: var(--accent-color, #007acc);
+      }
       .freq-panel {
         width: 280px;
+        min-width: 180px;
+        max-width: 600px;
         background: var(--bg-secondary);
         border-left: 1px solid var(--border-color);
         display: flex;
         flex-direction: column;
         overflow: hidden;
       }
-      .freq-panel.hidden { display: none; }
       .freq-panel-header {
         display: flex;
         align-items: center;
@@ -869,12 +886,15 @@ export class ViewerPanel {
           <div class="loading">Loading data...</div>
         </div>
       </div>
-      <div class="freq-panel hidden" id="freq-panel">
-        <div class="freq-panel-header">
-          <span class="freq-panel-title" id="freq-title">Frequency</span>
-          <button class="freq-panel-close" id="freq-close">×</button>
+      <div class="freq-panel-wrapper hidden" id="freq-panel-wrapper">
+        <div class="freq-panel-resizer" id="freq-resizer"></div>
+        <div class="freq-panel" id="freq-panel">
+          <div class="freq-panel-header">
+            <span class="freq-panel-title" id="freq-title">Frequency</span>
+            <button class="freq-panel-close" id="freq-close">×</button>
+          </div>
+          <div class="freq-panel-content" id="freq-content"></div>
         </div>
-        <div class="freq-panel-content" id="freq-content"></div>
       </div>
     </div>
     <div class="status-bar">
@@ -941,7 +961,9 @@ export class ViewerPanel {
         const filterChipsEl = document.getElementById('filter-chips');
         
         // Frequency panel elements
+        const freqPanelWrapper = document.getElementById('freq-panel-wrapper');
         const freqPanel = document.getElementById('freq-panel');
+        const freqResizer = document.getElementById('freq-resizer');
         const freqTitle = document.getElementById('freq-title');
         const freqContent = document.getElementById('freq-content');
         const freqCloseBtn = document.getElementById('freq-close');
@@ -1393,8 +1415,8 @@ export class ViewerPanel {
               return;
             }
             // Close frequency panel if open
-            if (!freqPanel.classList.contains('hidden')) {
-              freqPanel.classList.add('hidden');
+            if (!freqPanelWrapper.classList.contains('hidden')) {
+              freqPanelWrapper.classList.add('hidden');
               return;
             }
             // Close variable selector if open
@@ -1529,7 +1551,7 @@ export class ViewerPanel {
             });
           }
           
-          freqPanel.classList.remove('hidden');
+          freqPanelWrapper.classList.remove('hidden');
         }
         
         function renderNumericStats(values, columnName) {
@@ -1598,7 +1620,43 @@ export class ViewerPanel {
         
         // Close frequency panel
         freqCloseBtn.addEventListener('click', function() {
-          freqPanel.classList.add('hidden');
+          freqPanelWrapper.classList.add('hidden');
+        });
+
+        // Frequency panel resizer drag functionality
+        let isResizing = false;
+        let startX = 0;
+        let startWidth = 0;
+        
+        freqResizer.addEventListener('mousedown', function(e) {
+          isResizing = true;
+          startX = e.clientX;
+          startWidth = freqPanel.offsetWidth;
+          freqResizer.classList.add('dragging');
+          document.body.style.cursor = 'col-resize';
+          document.body.style.userSelect = 'none';
+          e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', function(e) {
+          if (!isResizing) return;
+          
+          // Calculate new width (dragging left increases width)
+          const deltaX = startX - e.clientX;
+          let newWidth = startWidth + deltaX;
+          
+          // Clamp to min/max
+          newWidth = Math.max(180, Math.min(600, newWidth));
+          freqPanel.style.width = newWidth + 'px';
+        });
+        
+        document.addEventListener('mouseup', function() {
+          if (isResizing) {
+            isResizing = false;
+            freqResizer.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+          }
         });
 
         // ===============================
