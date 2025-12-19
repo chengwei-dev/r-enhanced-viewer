@@ -153,104 +153,60 @@ class VscodeRConnection {
   getInitializationCode(port: number): string {
     return `
 # REViewer initialization (auto-injected)
-local({
-  if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
-    .REViewer_port <- ${port}
-    
-    # REView function to send data to VS Code
-    REView <- function(x, name = NULL) {
-      if (!requireNamespace("jsonlite", quietly = TRUE)) {
-        message("Installing jsonlite...")
-        install.packages("jsonlite", quiet = TRUE)
-      }
-      if (!requireNamespace("httr", quietly = TRUE)) {
-        message("Installing httr...")
-        install.packages("httr", quiet = TRUE)
-      }
-      
-      var_name <- if (!is.null(name)) name else deparse(substitute(x))
-      if (!is.data.frame(x)) x <- as.data.frame(x)
-      
-      # Get column types
-      col_types <- sapply(x, function(col) {
-        cls <- class(col)[1]
-        if (cls %in% c("numeric", "integer")) "numeric"
-        else if (cls %in% c("factor", "character")) "character"
-        else if (cls %in% c("Date", "POSIXct", "POSIXlt")) "date"
-        else if (cls == "logical") "logical"
-        else "character"
-      })
-      
-      json_data <- jsonlite::toJSON(list(
-        name = var_name,
-        data = as.list(x),
-        nrow = nrow(x),
-        ncol = ncol(x),
-        colnames = colnames(x),
-        coltypes = col_types
-      ), auto_unbox = TRUE, null = "null", na = "null")
-      
-      tryCatch({
-        httr::POST(
-          paste0("http://localhost:", .REViewer_port, "/review"),
-          body = json_data,
-          encode = "raw",
-          httr::content_type_json(),
-          httr::timeout(5)
-        )
-        message("\\u2713 REViewer: ", var_name, " (", nrow(x), " \\u00d7 ", ncol(x), ")")
-      }, error = function(e) {
-        message("\\u2717 REViewer not available: ", e$message)
-      })
-      invisible(x)
+if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
+  .REViewer_port <<- ${port}
+  
+  # REView function to send data to VS Code
+  REView <<- function(x, name = NULL) {
+    if (!requireNamespace("jsonlite", quietly = TRUE)) {
+      message("Installing jsonlite...")
+      install.packages("jsonlite", quiet = TRUE)
+    }
+    if (!requireNamespace("httr", quietly = TRUE)) {
+      message("Installing httr...")
+      install.packages("httr", quiet = TRUE)
     }
     
-    # Function to list data frames in environment
-    .REViewer_listDataFrames <- function() {
-      objs <- ls(envir = .GlobalEnv)
-      dfs <- lapply(objs, function(name) {
-        obj <- get(name, envir = .GlobalEnv)
-        if (is.data.frame(obj)) {
-          list(
-            name = name,
-            rows = nrow(obj),
-            columns = ncol(obj),
-            size = format(object.size(obj), units = "auto")
-          )
-        } else NULL
-      })
-      dfs <- Filter(Negate(is.null), dfs)
-      jsonlite::toJSON(dfs, auto_unbox = TRUE)
-    }
+    var_name <- if (!is.null(name)) name else deparse(substitute(x))
+    if (!is.data.frame(x)) x <- as.data.frame(x)
     
-    # Function to get data frame as JSON
-    .REViewer_getDataFrame <- function(name) {
-      x <- get(name, envir = .GlobalEnv)
-      if (!is.data.frame(x)) x <- as.data.frame(x)
-      
-      col_types <- sapply(x, function(col) {
-        cls <- class(col)[1]
-        if (cls %in% c("numeric", "integer")) "numeric"
-        else if (cls %in% c("factor", "character")) "character"
-        else if (cls %in% c("Date", "POSIXct", "POSIXlt")) "date"
-        else if (cls == "logical") "logical"
-        else "character"
-      })
-      
-      jsonlite::toJSON(list(
-        name = name,
-        data = as.list(x),
-        nrow = nrow(x),
-        ncol = ncol(x),
-        colnames = colnames(x),
-        coltypes = col_types
-      ), auto_unbox = TRUE, null = "null", na = "null")
-    }
+    # Get column types
+    col_types <- sapply(x, function(col) {
+      cls <- class(col)[1]
+      if (cls %in% c("numeric", "integer")) "numeric"
+      else if (cls %in% c("factor", "character")) "character"
+      else if (cls %in% c("Date", "POSIXct", "POSIXlt")) "date"
+      else if (cls == "logical") "logical"
+      else "character"
+    })
     
-    assign(".REViewer_initialized", TRUE, envir = .GlobalEnv)
-    message("\\u2713 REViewer ready. Use REView(df) to view data frames.")
+    json_data <- jsonlite::toJSON(list(
+      name = var_name,
+      data = as.list(x),
+      nrow = nrow(x),
+      ncol = ncol(x),
+      colnames = colnames(x),
+      coltypes = col_types
+    ), auto_unbox = TRUE, null = "null", na = "null")
+    
+    tryCatch({
+      httr::POST(
+        paste0("http://localhost:", .REViewer_port, "/review"),
+        body = json_data,
+        encode = "raw",
+        httr::content_type_json(),
+        httr::timeout(5)
+      )
+      message("\\u2713 REViewer: ", var_name, " (", nrow(x), " \\u00d7 ", ncol(x), ")")
+    }, error = function(e) {
+      message("\\u2717 REViewer not available: ", e$message)
+    })
+    invisible(x)
   }
-})
+  
+  .REViewer_initialized <<- TRUE
+  message("\\u2713 REViewer ready. Use REView(df) to view data frames.")
+}
 `;
   }
 
