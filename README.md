@@ -30,16 +30,25 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 
 ### Usage
 
-#### Option 1: Use REView() Function (Recommended) 🚀
+#### Option 1: Zero-Config with vscode-r (Recommended) 🚀
 
-The easiest way! Just type `REView(df)` in your R console:
+**Best experience - no R setup required!**
+
+1. Install [R Extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=REditorSupport.r) (vscode-r)
+2. Start R terminal: `Cmd+Shift+P` → "R: Create R Terminal"
+3. View data: `Cmd+Shift+P` → "REViewer: View Data Frame" → Enter variable name (e.g., `mtcars`)
+
+That's it! REViewer automatically connects to your R session through vscode-r.
+
+#### Option 2: REView() Function
+
+Directly send data frames to the viewer from R:
 
 ```r
 # One-time setup: Install required packages
 install.packages(c("jsonlite", "httr"))
 
-# Get the REView function (click status bar "REViewer: 8765" → "Copy R Code")
-# Or source directly:
+# Source the REView function
 source("path/to/r-package/REView_quick.R")
 
 # Now view any data frame instantly!
@@ -50,9 +59,9 @@ library(dplyr)
 iris %>% filter(Species == "setosa") %>% REView()
 ```
 
-#### Option 2: Command Palette (with R Connection)
+#### Option 3: Manual HTTP Connection
 
-For GUI-based data frame selection, connect R first:
+For advanced users who want full data frame listing:
 
 ```r
 # One-time setup
@@ -64,13 +73,12 @@ source("path/to/r-package/R/reviewer_service.R")
 # Connect to VS Code
 reviewer_connect()
 # ✓ Connected to REViewer on port 8765
-# Use Cmd+Shift+P → 'REViewer: View Data Frame' in VS Code
 ```
 
 Then in VS Code:
 1. Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
 2. Run `REViewer: View Data Frame`
-3. Select a data frame from your R workspace
+3. Select a data frame from the list
 
 ## Project Architecture
 
@@ -83,7 +91,9 @@ r-enhanced-viewer/
 │   │   ├── types.ts             # Shared TypeScript types
 │   │   ├── eventBus.ts          # Event system for module communication
 │   │   ├── moduleRegistry.ts    # Module management system
-│   │   ├── rSession.ts          # R process communication
+│   │   ├── httpServer.ts        # HTTP server for R communication
+│   │   ├── vscodeRApi.ts        # vscode-r extension integration
+│   │   ├── rSession.ts          # R session management
 │   │   └── dataProvider.ts      # High-level data operations
 │   │
 │   ├── modules/                 # Feature modules (pluggable)
@@ -99,6 +109,12 @@ r-enhanced-viewer/
 │   │   └── styles/              # CSS styles
 │   │
 │   └── extension.ts             # Extension entry point
+│
+├── r-package/                   # R package for REView() function
+│   ├── R/
+│   │   ├── REView.R             # Main REView function
+│   │   └── reviewer_service.R   # HTTP connection service
+│   └── REView_quick.R           # Quick-load script
 │
 ├── package.json                 # Extension manifest
 └── vite.config.ts               # Frontend build config

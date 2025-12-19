@@ -275,6 +275,12 @@ export class REViewerServer {
       return;
     }
 
+    // Callback endpoint for vscode-r API responses
+    if (req.method === 'POST' && url.startsWith('/callback/')) {
+      this.handleCallbackRequest(req, res, url);
+      return;
+    }
+
     // 404 for other routes
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'Not found' }));
@@ -394,6 +400,33 @@ export class REViewerServer {
         res.end(JSON.stringify({ status: 'ok' }));
       } catch (error) {
         pending.reject(error as Error);
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: (error as Error).message }));
+      }
+    });
+  }
+
+  /**
+   * Handle callback from vscode-r API (R sends results back)
+   */
+  private handleCallbackRequest(req: http.IncomingMessage, res: http.ServerResponse, url: string): void {
+    const callbackId = url.replace('/callback/', '');
+    
+    let body = '';
+    req.on('data', (chunk) => { body += chunk.toString(); });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        
+        // Import vscodeRConnection dynamically to avoid circular dependency
+        import('./vscodeRApi').then(({ vscodeRConnection }) => {
+          vscodeRConnection.handleCallback(callbackId, data);
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok' }));
+      } catch (error) {
+        console.error('Error handling callback:', error);
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: (error as Error).message }));
       }
