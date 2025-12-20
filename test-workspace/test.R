@@ -1,8 +1,12 @@
 # Test script for REViewer
 library(pharmaverseadam)
 # Create test data frame
+data("adsl")
 data("adae")
 
+View(adae)
+REView(adae)
+REView(adsl)
 # Load REViewer functions
 source("../r-package/R/REView.R")
 

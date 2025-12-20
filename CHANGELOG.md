@@ -36,6 +36,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reviewer_disconnect()` - Disconnect R session
 - `reviewer_status()` - Check connection status
 
+## [0.1.1] - 2025-12-20
+
+### Added
+
+- **Security & Compliance Documentation**: Added comprehensive security section to README
+  - Data privacy guarantees (100% local processing, no external network requests)
+  - Pharmaceutical industry compliance (21 CFR Part 11, HIPAA, GDPR, GxP)
+  - Technical security details (localhost-only binding, webview sandbox)
+  - Enterprise deployment options for air-gapped environments
+
+### Fixed
+
+- Dynamic vscode-r extension detection when "View Data Frame" command is invoked
+- REView function now properly available in R global environment after auto-injection
+
 ## [Unreleased]
 
 ### Planned

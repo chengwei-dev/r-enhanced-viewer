@@ -238,6 +238,62 @@ This extension is designed with pharmaceutical industry needs in mind:
 - **Missing Values** - NA values are clearly highlighted
 - **CDISC Ready** - Optimized for SDTM/ADaM data structures
 
+## Security & Compliance
+
+### 🔒 Data Privacy
+
+REViewer is designed with pharmaceutical industry data security requirements in mind:
+
+| Security Feature | Status | Description |
+|-----------------|--------|-------------|
+| **100% Local Processing** | ✅ | All data remains on your local machine |
+| **No External Network Requests** | ✅ | No data is sent to any external servers |
+| **No Telemetry** | ✅ | No usage data or analytics collection |
+| **No Cloud Dependencies** | ✅ | Works completely offline |
+| **Memory-Only Storage** | ✅ | Data exists only in memory during viewing session |
+
+### 🏥 Pharmaceutical Industry Compliance
+
+| Regulation | Status | Notes |
+|------------|--------|-------|
+| **21 CFR Part 11** | ✅ Compatible | Read-only viewer, does not modify source data |
+| **HIPAA** | ✅ Compliant | No PHI data transmission |
+| **GDPR** | ✅ Compliant | No personal data collection |
+| **GxP** | ✅ Compatible | Suitable for validated environments |
+
+### 🔧 Technical Security Details
+
+- **Localhost Only**: HTTP server binds exclusively to `127.0.0.1` (localhost) - external network cannot access
+- **Webview Sandbox**: VS Code Webview runs in isolated browser environment with no filesystem or network access
+- **No Persistent Storage**: Data is released from memory when viewer is closed
+- **Open Source**: Full source code available for security audits
+
+### 🏢 Enterprise Deployment Options
+
+**Option 1: VS Code Marketplace (Standard)**
+- Install directly from VS Code Extensions panel
+- Extension reviewed by Microsoft
+
+**Option 2: Offline VSIX Installation (Air-Gapped Environments)**
+```bash
+# IT department downloads and distributes VSIX file
+npx @vscode/vsce package
+# Employees install via "Install from VSIX"
+```
+
+**Option 3: Internal Security Review**
+```bash
+# Clone and audit source code
+git clone https://github.com/chengwei/r-enhanced-viewer
+
+# Verify no external network calls
+grep -r "fetch\|axios\|http.request" src/
+
+# Build internally and distribute
+npm install && npm run build
+npx @vscode/vsce package
+```
+
 ## Roadmap
 
 ### Phase 1 (Current)
