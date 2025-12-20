@@ -207,6 +207,14 @@ function registerCommands(context: vscode.ExtensionContext): void {
   const viewDataFrameCmd = vscode.commands.registerCommand(
     'reviewer.viewDataFrame',
     async () => {
+      // Try to initialize vscode-r connection dynamically (in case it wasn't ready at activation)
+      if (!vscodeRAvailable) {
+        vscodeRAvailable = await vscodeRConnection.initialize();
+        if (vscodeRAvailable) {
+          console.log('✓ vscode-r extension detected dynamically - zero-config mode enabled');
+        }
+      }
+
       // Strategy 1: Use vscode-r extension if available (zero-config mode)
       if (vscodeRAvailable) {
         await handleViewDataFrameWithVscodeR(context);
@@ -262,6 +270,13 @@ function registerCommands(context: vscode.ExtensionContext): void {
         vscode.commands.executeCommand('r.createRTerm');
       }
       return;
+    }
+
+    // Update status bar to show vscode-r mode is active
+    if (rSessionStatusBarItem) {
+      rSessionStatusBarItem.text = '$(zap) R Ready';
+      rSessionStatusBarItem.tooltip = 'vscode-r detected. Using zero-config mode.';
+      rSessionStatusBarItem.backgroundColor = undefined;
     }
 
     // Initialize R session if needed
