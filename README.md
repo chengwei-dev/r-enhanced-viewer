@@ -4,18 +4,18 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 
 ## Features
 
-- 📊 **Enhanced Data Viewing** - View R data frames in a modern spreadsheet-like interface
-- 🚀 **REView() Function** - Type `REView(df)` in R console to instantly view data
-- 🔍 **Global Search** - Press `Ctrl+F` / `Cmd+F` to search across all columns
-- 🎛️ **Variable Selector** - Quickly browse and select variables with type indicators and search functionality
-- ↕️ **Multi-Column Sorting** - Click column headers to sort; hold Shift to add secondary sort columns
-- 🔎 **Quick Filter** - Press `E` on any cell to filter data; `Shift+E` to add OR conditions
-- 📊 **Frequency Tables** - Press `F` on any cell to view frequency distribution
-- 📈 **Summary Statistics** - Press `M` on numeric columns to view mean, median, min, max, and more
-- 📋 **Copy Support** - Double-click cells to copy values
-- ⌨️ **Keyboard Navigation** - Use arrow keys to navigate cells; `Home`/`End` for first/last row
-- 🔢 **Jump to Row** - Press `Ctrl+G` / `Cmd+G` to jump to a specific row number
-- ❌ **Clear Filters** - Press `Escape` to clear all filters and close panels
+- **Enhanced Data Viewing** - View R data frames in a modern spreadsheet-like interface
+- **REView() Function** - Type `REView(df)` in R console to instantly view data
+- **Global Search** - Press `Ctrl+F` / `Cmd+F` to search across all columns
+- **Variable Selector** - Quickly browse and select variables with type indicators and search functionality
+- **Multi-Column Sorting** - Click column headers to sort; hold Shift to add secondary sort columns
+- **Quick Filter** - Press `E` on any cell to filter data; `Shift+E` to add OR conditions
+- **Frequency Tables** - Press `F` on any cell to view frequency distribution
+- **Summary Statistics** - Press `M` on numeric columns to view mean, median, min, max, and more
+- **Copy Support** - Double-click cells to copy values
+- **Keyboard Navigation** - Use arrow keys to navigate cells; `Home`/`End` for first/last row
+- **Jump to Row** - Press `Ctrl+G` / `Cmd+G` to jump to a specific row number
+- **Clear Filters** - Press `Escape` to clear all filters and close panels
 
 ## Quick Start
 
