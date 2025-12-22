@@ -839,7 +839,7 @@ export class ViewerPanel {
         background: rgba(0, 122, 204, 0.1);
       }
       td:hover::after {
-        content: 'Press E to filter';
+        content: 'E: filter | Alt+E: add OR';
         position: absolute;
         bottom: -20px;
         left: 50%;
@@ -1350,8 +1350,26 @@ export class ViewerPanel {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
+          // Alt+E (Option+E on Mac) - Add OR filter condition for same/different column
+          if ((e.key === 'e' || e.key === 'E') && selectedCell && e.altKey && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            
+            const newFilter = {
+              columnName: selectedCell.columnName,
+              operator: 'eq',
+              value: selectedCell.value
+            };
+            
+            // Add as OR condition
+            quickFilterState.filters.push(newFilter);
+            quickFilterState.logic = 'OR';
+            quickFilterState.enabled = true;
+            applyQuickFiltersAndRender();
+            return;
+          }
+          
           // E key - Equal filter (requires selected cell)
-          if ((e.key === 'e' || e.key === 'E') && selectedCell) {
+          if ((e.key === 'e' || e.key === 'E') && selectedCell && !e.altKey) {
             e.preventDefault();
             const isShift = e.shiftKey;
             
@@ -1364,8 +1382,9 @@ export class ViewerPanel {
             if (!isShift) {
               // Replace all filters
               quickFilterState.filters = [newFilter];
+              quickFilterState.logic = 'AND';  // Reset to AND when replacing
             } else {
-              // Add to existing filters
+              // Add to existing filters (AND logic)
               quickFilterState.filters.push(newFilter);
             }
             

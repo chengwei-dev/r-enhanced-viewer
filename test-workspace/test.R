@@ -3,10 +3,14 @@ library(pharmaverseadam)
 # Create test data frame
 data("adsl")
 data("adae")
+data("advs")
+
+source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
 
 View(adae)
 REView(adae)
 REView(adsl)
+REView(advs)
 # Load REViewer functions
 source("../r-package/R/REView.R")
 
