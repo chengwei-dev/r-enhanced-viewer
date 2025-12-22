@@ -9,7 +9,7 @@ A VS Code / Cursor extension for enhanced data frame viewing, designed specifica
 - **Global Search** - Press `Ctrl+F` / `Cmd+F` to search across all columns
 - **Variable Selector** - Quickly browse and select variables with type indicators and search functionality
 - **Multi-Column Sorting** - Click column headers to sort; hold Shift to add secondary sort columns
-- **Quick Filter** - Press `E` on any cell to filter data; `Alt+E` / `Option+E` to add OR conditions in the same column; `Shift+E` to add AND conditions
+- **Quick Filter** - Press `E` on any cell to filter data; `Shift+E` to add OR conditions
 - **Frequency Tables** - Press `F` on any cell to view frequency distribution
 - **Summary Statistics** - Press `M` on numeric columns to view mean, median, min, max, and more
 - **Copy Support** - Double-click cells to copy values
