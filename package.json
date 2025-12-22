@@ -1,8 +1,8 @@
 {
   "name": "r-enhanced-viewer",
   "displayName": "R Enhanced Viewer (REViewer)",
-  "description": "Enhanced data frame viewer for R - View R data frames with REView(df). Features virtual scrolling, sorting, search, and dark/light theme support.",
-  "version": "0.1.2",
+  "description": "Enhanced R data frame viewer for statistical programmers. Features quick filtering, multi-column sorting, frequency tables (F), and summary statistics (M).",
+  "version": "0.1.3",
   "publisher": "ChengweiLi",
   "license": "MIT",
   "icon": "images/icon.png",
