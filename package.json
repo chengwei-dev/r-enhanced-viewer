@@ -8,12 +8,12 @@
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chengwei/r-enhanced-viewer"
+    "url": "https://github.com/chengwei-dev/r-enhanced-viewer"
   },
   "bugs": {
-    "url": "https://github.com/chengwei/r-enhanced-viewer/issues"
+    "url": "https://github.com/chengwei-dev/r-enhanced-viewer/issues"
   },
-  "homepage": "https://github.com/chengwei/r-enhanced-viewer#readme",
+  "homepage": "https://github.com/chengwei-dev/r-enhanced-viewer#readme",
   "engines": {
     "vscode": "^1.85.0"
   },

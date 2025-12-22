@@ -4,7 +4,7 @@
 #   source("path/to/REView_quick.R")
 #
 # Or from GitHub:
-#   source("https://raw.githubusercontent.com/YOUR_USERNAME/reviewer/main/r-package/REView_quick.R")
+#   source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/REView_quick.R")
 
 # Check and install dependencies
 if (!requireNamespace("jsonlite", quietly = TRUE)) {

@@ -223,7 +223,7 @@ install.packages(c("jsonlite", "httr"))
 
 # 2. Source the REView function:
 # Option A: From GitHub (recommended)
-# source("https://raw.githubusercontent.com/YOUR_USERNAME/reviewer/main/r-package/R/REView.R")
+# source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
 
 # Option B: Define directly (paste this in R console):
 REView <- function(x, name = NULL, port = %d) {

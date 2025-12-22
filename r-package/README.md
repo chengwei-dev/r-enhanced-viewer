@@ -10,7 +10,7 @@ Just source the function directly:
 
 ```r
 # From GitHub:
-source("https://raw.githubusercontent.com/YOUR_USERNAME/reviewer/main/r-package/R/REView.R")
+source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
 
 # Or copy-paste the function from the VS Code extension:
 # Command Palette → "REViewer: Show Server Info & Get R Code" → "Copy R Code"
@@ -20,7 +20,7 @@ source("https://raw.githubusercontent.com/YOUR_USERNAME/reviewer/main/r-package/
 
 ```r
 # Install from GitHub
-# devtools::install_github("YOUR_USERNAME/reviewer", subdir = "r-package")
+# devtools::install_github("chengwei-dev/r-enhanced-viewer", subdir = "r-package")
 
 # Or install locally
 # install.packages("/path/to/r-package", repos = NULL, type = "source")
