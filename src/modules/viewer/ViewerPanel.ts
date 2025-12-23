@@ -392,6 +392,20 @@ export class ViewerPanel {
         --cell-character: #ce9178;
         --cell-na: #808080;
       }
+      /* Light theme */
+      body.light-theme {
+        --bg-primary: #ffffff;
+        --bg-secondary: #f5f5f5;
+        --bg-tertiary: #e8e8e8;
+        --bg-hover: #e0e0e0;
+        --text-primary: #333333;
+        --text-muted: #666666;
+        --border-color: #d0d0d0;
+        --accent: #0066cc;
+        --cell-numeric: #098658;
+        --cell-character: #a31515;
+        --cell-na: #808080;
+      }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html, body { height: 100%; overflow: hidden; }
       body { 
@@ -774,6 +788,11 @@ export class ViewerPanel {
         cursor: pointer;
       }
       .toolbar-btn:hover { background: var(--bg-hover); border-color: var(--accent); }
+      .theme-toggle { 
+        margin-left: auto; 
+        font-size: 16px; 
+        padding: 0 10px;
+      }
       .search-input {
         height: 28px;
         padding: 0 8px;
@@ -878,6 +897,7 @@ export class ViewerPanel {
       <input type="text" class="search-input" id="search" placeholder="Search...">
       <button class="toolbar-btn" id="select-vars">☰ Variables</button>
       <button class="toolbar-btn" id="refresh">⟳ Refresh</button>
+      <button class="toolbar-btn theme-toggle" id="theme-toggle" title="Toggle Light/Dark Theme">🌙</button>
     </div>
     <div class="filter-chips-container hidden" id="filter-chips"></div>
     <div class="content-wrapper">
@@ -960,6 +980,10 @@ export class ViewerPanel {
         const searchEl = document.getElementById('search');
         const refreshBtn = document.getElementById('refresh');
         const filterChipsEl = document.getElementById('filter-chips');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        
+        // Theme state
+        let isDarkTheme = true;
         
         // Frequency panel elements
         const freqPanelWrapper = document.getElementById('freq-panel-wrapper');
@@ -1371,6 +1395,22 @@ export class ViewerPanel {
         // Refresh
         refreshBtn.addEventListener('click', function() {
           vscode.postMessage({ type: 'requestData', payload: {} });
+        });
+
+        // Theme toggle
+        themeToggleBtn.addEventListener('click', function() {
+          isDarkTheme = !isDarkTheme;
+          if (isDarkTheme) {
+            document.body.classList.remove('light-theme');
+            themeToggleBtn.textContent = '🌙';
+            themeToggleBtn.title = 'Switch to Light Theme';
+          } else {
+            document.body.classList.add('light-theme');
+            themeToggleBtn.textContent = '☀️';
+            themeToggleBtn.title = 'Switch to Dark Theme';
+          }
+          // Save preference
+          vscode.postMessage({ type: 'themeChanged', payload: { isDark: isDarkTheme } });
         });
 
         // Update status bar
