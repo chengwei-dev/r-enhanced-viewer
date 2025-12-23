@@ -839,7 +839,7 @@ export class ViewerPanel {
         background: rgba(0, 122, 204, 0.1);
       }
       td:hover::after {
-        content: 'Press E to filter';
+        content: 'E: filter | Ctrl+click: multi-select | I: IN filter';
         position: absolute;
         bottom: -20px;
         left: 50%;
@@ -950,6 +950,7 @@ export class ViewerPanel {
         let filteredRows = null;
         let sortState = { columns: [] };
         let selectedCell = null;  // { rowIndex, columnIndex, value, columnName }
+        let selectedCells = [];   // Array for multi-select: [{ rowIndex, columnIndex, value, columnName }]
         let quickFilterState = { enabled: false, filters: [], logic: 'AND' };
 
         // DOM elements
@@ -1034,7 +1035,10 @@ export class ViewerPanel {
               const value = Array.isArray(row) ? row[colIdx] : row[col.name];
               const cellClass = getCellClass(value, col.type);
               const displayValue = formatValue(value, col.type);
-              const isSelected = selectedCell && selectedCell.rowIndex === idx && selectedCell.columnIndex === colIdx;
+              // Check if this cell is in multi-selection or single selection
+              const isMultiSelected = selectedCells.some(c => c.rowIndex === idx && c.columnIndex === colIdx);
+              const isSingleSelected = selectedCell && selectedCell.rowIndex === idx && selectedCell.columnIndex === colIdx;
+              const isSelected = isMultiSelected || isSingleSelected;
               html += '<td class="' + cellClass + (isSelected ? ' selected' : '') + '" data-row="' + idx + '" data-col="' + colIdx + '">' + escapeHtml(displayValue) + '</td>';
             });
             html += '</tr>';
@@ -1056,10 +1060,10 @@ export class ViewerPanel {
           // Add click handlers to table cells
           const cells = mainEl.querySelectorAll('td[data-row][data-col]');
           cells.forEach(td => {
-            td.addEventListener('click', function() {
+            td.addEventListener('click', function(e) {
               const rowIndex = parseInt(this.getAttribute('data-row'));
               const columnIndex = parseInt(this.getAttribute('data-col'));
-              handleCellClick(rowIndex, columnIndex);
+              handleCellClick(rowIndex, columnIndex, e);
             });
           });
         }
@@ -1086,13 +1090,13 @@ export class ViewerPanel {
         }
 
         // Cell selection handling
-        function handleCellClick(rowIndex, columnIndex) {
+        function handleCellClick(rowIndex, columnIndex, event) {
           const rows = filteredRows || currentData.rows;
           const row = rows[rowIndex];
           const value = Array.isArray(row) ? row[columnIndex] : row[currentData.columns[columnIndex].name];
           const columnName = currentData.columns[columnIndex].name;
           
-          selectedCell = {
+          const cellInfo = {
             rowIndex,
             columnIndex,
             value,
@@ -1100,7 +1104,36 @@ export class ViewerPanel {
             columnType: currentData.columns[columnIndex].type
           };
           
+          // Check for Ctrl+click (Windows) or Cmd+click (Mac) for multi-select
+          const isMultiSelect = event && (event.ctrlKey || event.metaKey);
+          
+          if (isMultiSelect) {
+            // Multi-select mode: only allow same column
+            if (selectedCells.length > 0 && selectedCells[0].columnIndex !== columnIndex) {
+              // Different column - start fresh with this cell
+              selectedCells = [cellInfo];
+              selectedCell = cellInfo;
+            } else {
+              // Same column or first selection
+              // Check if already selected - if so, deselect
+              const existingIdx = selectedCells.findIndex(c => c.rowIndex === rowIndex && c.columnIndex === columnIndex);
+              if (existingIdx >= 0) {
+                selectedCells.splice(existingIdx, 1);
+                // Update selectedCell to last selected or null
+                selectedCell = selectedCells.length > 0 ? selectedCells[selectedCells.length - 1] : null;
+              } else {
+                selectedCells.push(cellInfo);
+                selectedCell = cellInfo;
+              }
+            }
+          } else {
+            // Normal click - single selection, clear multi-select
+            selectedCells = [cellInfo];
+            selectedCell = cellInfo;
+          }
+          
           renderTable(currentData);
+          updateStatus();
         }
 
         // Sort handling
@@ -1345,13 +1378,20 @@ export class ViewerPanel {
           if (!currentData) return;
           const total = currentData.totalRows;
           const shown = filteredRows ? filteredRows.length : currentData.rows.length;
-          statusEl.textContent = 'Rows: ' + shown + (filteredRows ? ' / ' + total : '') + ' | Columns: ' + currentData.totalColumns;
+          let statusText = 'Rows: ' + shown + (filteredRows ? ' / ' + total : '') + ' | Columns: ' + currentData.totalColumns;
+          
+          // Show multi-select info
+          if (selectedCells.length > 1) {
+            statusText += ' | Selected: ' + selectedCells.length + ' values (Press I to filter)';
+          }
+          
+          statusEl.textContent = statusText;
         }
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
           // E key - Equal filter (requires selected cell)
-          if ((e.key === 'e' || e.key === 'E') && selectedCell) {
+          if ((e.key === 'e' || e.key === 'E') && selectedCell && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
             const isShift = e.shiftKey;
             
@@ -1362,11 +1402,43 @@ export class ViewerPanel {
             };
             
             if (!isShift) {
-              // Replace all filters
+              // Replace all filters, reset to AND logic
               quickFilterState.filters = [newFilter];
+              quickFilterState.logic = 'AND';
             } else {
-              // Add to existing filters
+              // Add to existing filters with AND logic
               quickFilterState.filters.push(newFilter);
+              quickFilterState.logic = 'AND';
+            }
+            
+            quickFilterState.enabled = true;
+            applyQuickFiltersAndRender();
+            return;
+          }
+          
+          // I key - IN filter (requires multi-selected cells in same column)
+          if ((e.key === 'i' || e.key === 'I') && selectedCells.length > 0 && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            
+            // Get unique values from selected cells (all should be same column)
+            const columnName = selectedCells[0].columnName;
+            const uniqueValues = [...new Set(selectedCells.map(c => c.value))];
+            
+            if (uniqueValues.length === 1) {
+              // Single value - just use equal filter
+              quickFilterState.filters = [{
+                columnName: columnName,
+                operator: 'eq',
+                value: uniqueValues[0]
+              }];
+            } else {
+              // Multiple values - create OR filters for each value
+              quickFilterState.filters = uniqueValues.map(val => ({
+                columnName: columnName,
+                operator: 'eq',
+                value: val
+              }));
+              quickFilterState.logic = 'OR';
             }
             
             quickFilterState.enabled = true;
@@ -1427,6 +1499,7 @@ export class ViewerPanel {
             // Clear filters and selection
             quickFilterState = { enabled: false, filters: [], logic: 'AND' };
             selectedCell = null;
+            selectedCells = [];
             filteredRows = null;
             searchEl.value = '';
             renderTable(currentData);
@@ -1967,6 +2040,7 @@ export class ViewerPanel {
           sortState = { columns: [] };
           quickFilterState = { enabled: false, filters: [], logic: 'AND' };
           selectedCell = null;
+          selectedCells = [];
           
           // Re-render
           renderFilterChips();
@@ -1990,6 +2064,7 @@ export class ViewerPanel {
               sortState = { columns: [] };  // Reset sort on new data
               quickFilterState = { enabled: false, filters: [], logic: 'AND' };
               selectedCell = null;
+              selectedCells = [];
               // Initialize variable selection
               selectedVariables = currentData.columns.map(c => c.name);
               variableOrder = [...selectedVariables];
