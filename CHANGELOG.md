@@ -45,6 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reviewer_disconnect()` - Disconnect R session
 - `reviewer_status()` - Check connection status
 
+## [0.1.6] - 2025-01-04
+
+### Fixed
+
+- **Variable Selector now shows all columns**: Previously, after applying a selection, reopening the Variable Selector only showed selected columns. Now it always shows all original columns, with selected columns at the top (checked) and unselected columns below (unchecked). Users can easily add back previously deselected columns.
+- **Keyboard shortcuts disabled when typing in input fields**: Pressing E/F/M/I keys while typing in search boxes or dialogs no longer triggers quick filter or frequency shortcuts. Escape key and Ctrl/Cmd combos still work as expected.
+
+## [0.1.5] - 2025-01-04
+
+### Added
+
+- **Theme Toggle Button**: Added a light/dark theme toggle button in the toolbar for manual theme switching, useful for IDEs like Positron where automatic theme detection may not work.
+
 ## [0.1.1] - 2025-12-21
 
 ### Added
