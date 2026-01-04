@@ -967,6 +967,8 @@ export class ViewerPanel {
       (function() {
         const vscode = acquireVsCodeApi();
         let currentData = null;
+        let originalColumns = [];  // Store original columns for variable selector
+        let originalRows = [];     // Store original rows for variable selector
         let filteredRows = null;
         let sortState = { columns: [] };
         let selectedCell = null;  // { rowIndex, columnIndex, value, columnName }
@@ -1430,6 +1432,16 @@ export class ViewerPanel {
 
         // Keyboard shortcuts
         document.addEventListener('keydown', function(e) {
+          // Skip shortcuts when typing in input fields (except for Escape and Ctrl/Cmd combos)
+          const activeEl = document.activeElement;
+          const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+          
+          // Allow Escape key even when typing (to close dialogs)
+          // Allow Ctrl/Cmd combos (like Ctrl+F) but not single letter keys
+          if (isTyping && e.key !== 'Escape' && !e.ctrlKey && !e.metaKey) {
+            return; // Let the input handle the keypress normally
+          }
+          
           // E key - Equal filter (requires selected cell)
           if ((e.key === 'e' || e.key === 'E') && selectedCell && !e.ctrlKey && !e.metaKey) {
             e.preventDefault();
@@ -1776,16 +1788,23 @@ export class ViewerPanel {
         // Variable Selector Functions
         // ===============================
         function openVariableSelector() {
-          if (!currentData) return;
+          if (!currentData || originalColumns.length === 0) return;
           
-          // Initialize selected variables if not set
+          // Always show all original columns, with current selection state preserved
+          // Reset variableOrder to include ALL original columns (selected first, then unselected)
+          const currentlySelected = selectedVariables.filter(v => originalColumns.some(c => c.name === v));
+          const unselected = originalColumns.map(c => c.name).filter(v => !currentlySelected.includes(v));
+          variableOrder = [...currentlySelected, ...unselected];
+          
+          // If no selection yet, select all
           if (selectedVariables.length === 0) {
-            selectedVariables = currentData.columns.map(c => c.name);
+            selectedVariables = originalColumns.map(c => c.name);
             variableOrder = [...selectedVariables];
           }
           
           renderVariableList();
           varModal.classList.remove('hidden');
+          varSearch.value = '';  // Clear search on open
         }
         
         function renderVariableList(searchQuery) {
@@ -1793,7 +1812,8 @@ export class ViewerPanel {
           
           let html = '';
           variableOrder.forEach((varName, idx) => {
-            const col = currentData.columns.find(c => c.name === varName);
+            // Use originalColumns to find column info (currentData.columns may be filtered)
+            const col = originalColumns.find(c => c.name === varName);
             if (!col) return;
             
             // Filter by search query
@@ -2049,16 +2069,18 @@ export class ViewerPanel {
             return;
           }
           
-          // Reorder columns based on selection
+          // Build columns and rows from ORIGINAL data (so we can add back previously removed columns)
           const newColumns = [];
-          const newRows = currentData.rows.map(row => {
+          // Build new rows from originalRows using originalColumns as reference
+          const newRows = originalRows.map(row => {
             const newRow = [];
+            // Iterate through selectedVariables in the order they appear in variableOrder
             variableOrder.forEach(varName => {
               if (selectedVariables.includes(varName)) {
-                const colIdx = currentData.columns.findIndex(c => c.name === varName);
+                const colIdx = originalColumns.findIndex(c => c.name === varName);
                 if (colIdx !== -1) {
                   if (newColumns.length < selectedVariables.length) {
-                    newColumns.push({ ...currentData.columns[colIdx], index: newColumns.length });
+                    newColumns.push({ ...originalColumns[colIdx], index: newColumns.length });
                   }
                   newRow.push(Array.isArray(row) ? row[colIdx] : row[varName]);
                 }
@@ -2100,13 +2122,16 @@ export class ViewerPanel {
               console.log('[Webview] columns:', message.payload.columns);
               console.log('[Webview] rows sample:', message.payload.rows ? message.payload.rows.slice(0, 2) : 'no rows');
               currentData = message.payload;
+              // Store original columns/rows for variable selector (preserve full list)
+              originalColumns = JSON.parse(JSON.stringify(currentData.columns));
+              originalRows = JSON.parse(JSON.stringify(currentData.rows));
               filteredRows = null;
               sortState = { columns: [] };  // Reset sort on new data
               quickFilterState = { enabled: false, filters: [], logic: 'AND' };
               selectedCell = null;
               selectedCells = [];
-              // Initialize variable selection
-              selectedVariables = currentData.columns.map(c => c.name);
+              // Initialize variable selection with all columns
+              selectedVariables = originalColumns.map(c => c.name);
               variableOrder = [...selectedVariables];
               titleEl.textContent = '📊 ' + currentData.name;
               renderFilterChips();
