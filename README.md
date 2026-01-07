@@ -48,6 +48,30 @@ library(dplyr)
 iris %>% filter(Species == "setosa") %>% REView()
 ```
 
+### Posit Workbench / Positron Users
+
+For users running R on Posit Workbench (remote server), each user needs a unique port to avoid conflicts:
+
+**Step 1: Source REView and check your port**
+```r
+source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/REView_quick.R")
+REView_port()  # Shows your unique port (e.g., 8742)
+```
+
+**Step 2: Configure the same port in Positron**
+1. Open Settings (`Cmd+,` or `Ctrl+,`)
+2. Search for `reviewer.server.port`
+3. Set it to your assigned port number
+
+**Step 3: Set up port forwarding** (if needed)
+- Positron typically handles this automatically
+- For manual setup: forward server port to your local machine
+
+**Step 4: Use REView**
+```r
+REView(mtcars)  # Data appears in YOUR Positron window
+```
+
 ## Pharma Industry Features
 
 This extension is designed with pharmaceutical industry needs in mind:
@@ -84,6 +108,7 @@ REViewer is designed with pharmaceutical industry data security requirements in 
 ### 🔧 Technical Security Details
 
 - **Localhost Only**: HTTP server binds exclusively to `127.0.0.1` (localhost) - external network cannot access
+- **Per-User Port Isolation**: Each user gets a unique port based on their username, preventing data cross-contamination on shared servers
 - **Webview Sandbox**: VS Code Webview runs in isolated browser environment with no filesystem or network access
 - **No Persistent Storage**: Data is released from memory when viewer is closed
 - **Open Source**: Full source code available for security audits

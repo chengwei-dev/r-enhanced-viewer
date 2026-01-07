@@ -3,9 +3,14 @@
 #' Opens a data frame in the REViewer VS Code extension panel.
 #' Provides an enhanced viewing experience similar to SAS VIEWTABLE.
 #'
+#' For Posit Workbench / Positron users:
+#' Each user gets a unique port based on their username to avoid conflicts.
+#' Run REView_port() to see your assigned port, then configure the same port
+#' in your Positron REViewer extension settings.
+#'
 #' @param x A data frame or matrix to view
 #' @param name Optional. Custom name for the data frame (defaults to variable name)
-#' @param port Port number for REViewer server (default: 8765)
+#' @param port Port number for REViewer server (default: auto-calculated based on username)
 #' @param include_labels Logical. Include variable labels if available (default: TRUE)
 #'
 #' @return Invisibly returns the input data frame
@@ -23,10 +28,18 @@
 #' mtcars %>%
 #'   filter(mpg > 20) %>%
 #'   REView()
+#'
+#' # Check your assigned port (for Posit Workbench)
+#' REView_port()
 #' }
 #'
 #' @export
-REView <- function(x, name = NULL, port = 8765, include_labels = TRUE) {
+REView <- function(x, name = NULL, port = NULL, include_labels = TRUE) {
+  # Use auto-calculated port if not specified
+  if (is.null(port)) {
+    port <- .REView_get_port()
+  }
+  
   # Validate input
   if (!is.data.frame(x) && !is.matrix(x)) {
     # Try to convert to data frame
@@ -146,32 +159,112 @@ REView <- function(x, name = NULL, port = 8765, include_labels = TRUE) {
     if (httr::status_code(response) == 200) {
       result <- httr::content(response, "parsed")
       message(sprintf(
-        "\u2713 REViewer: %s (%d rows \u00d7 %d cols)",
-        name, nrow(x), ncol(x)
+        "\u2713 REViewer: %s (%d rows \u00d7 %d cols) [port %d]",
+        name, nrow(x), ncol(x), port
       ))
     } else {
       warning(sprintf(
-        "REViewer returned status %d. Is VS Code extension running?",
+        "REViewer returned status %d. Is your IDE running with correct port?",
         httr::status_code(response)
       ))
     }
   }, error = function(e) {
-    message("\u2717 REViewer not available")
-    message("  Make sure:")
-    message("  1. VS Code/Cursor is open with REViewer extension")
-    message("  2. Extension is activated (open an R file)")
-    message(sprintf("  3. Server is running on port %d", port))
-    message("\n  Alternative: Use command palette 'REViewer: View Data Frame'")
+    message("\u2717 REViewer not available on port ", port)
+    message("")
+    message("  For Posit Workbench / Positron users:")
+    message("  1. Run REView_port() to see your assigned port")
+    message("  2. Configure the same port in Positron: Settings > reviewer.server.port")
+    message("  3. Set up port forwarding from server to your local machine")
+    message("")
+    message("  For VS Code / Cursor users:")
+    message("  Use Command Palette > 'REViewer: View Data Frame' instead")
   })
 
   invisible(x)
+}
+
+#' Calculate unique port based on username
+#' 
+#' Each user gets a port in range 8700-8799 based on their system username.
+#' This prevents port conflicts when multiple users are on the same server.
+#' 
+#' @return Integer port number
+#' @keywords internal
+.REView_calculate_port <- function() {
+  # Check for environment variable override first
+  env_port <- Sys.getenv("REVIEWER_PORT", unset = "")
+  if (nzchar(env_port)) {
+    port <- as.integer(env_port)
+    if (!is.na(port) && port > 1024 && port < 65535) {
+      return(port)
+    }
+  }
+  
+  # Calculate port based on username
+  username <- Sys.info()[["user"]]
+  if (is.null(username) || username == "") {
+    username <- Sys.getenv("USER", unset = Sys.getenv("USERNAME", unset = "default"))
+  }
+  
+  # Simple hash: sum of character codes modulo 100
+  char_codes <- utf8ToInt(username)
+  hash_value <- sum(char_codes) %% 100
+  
+  # Port range: 8700-8799
+  port <- 8700 + hash_value
+  return(port)
+}
+
+#' Get the REViewer port for current user
+#' @return Integer port number
+#' @keywords internal
+.REView_get_port <- function() {
+  # Check if port is cached in package environment
+  if (exists(".REView_cached_port", envir = .GlobalEnv)) {
+    return(get(".REView_cached_port", envir = .GlobalEnv))
+  }
+  
+  port <- .REView_calculate_port()
+  assign(".REView_cached_port", port, envir = .GlobalEnv)
+  return(port)
+}
+
+#' Get your REViewer port
+#' 
+#' Shows the port number assigned to your username.
+#' Configure this same port in your Positron/VS Code REViewer extension settings.
+#' 
+#' @return Integer port number (invisibly)
+#' @examples
+#' \dontrun{
+#' REView_port()  # Shows your assigned port
+#' }
+#' @export
+REView_port <- function() {
+  port <- .REView_get_port()
+  username <- Sys.info()[["user"]]
+  
+  message("REViewer Port Configuration")
+  message("===========================")
+  message("Username: ", username)
+  message("Assigned port: ", port)
+  message("")
+  message("To configure in Positron/VS Code:")
+  message("  1. Open Settings (Cmd+, or Ctrl+,)")
+  message("  2. Search for 'reviewer.server.port'")
+  message("  3. Set it to: ", port)
+  message("")
+  message("Or set environment variable before starting R:")
+  message("  export REVIEWER_PORT=", port)
+  
+  invisible(port)
 }
 
 #' Check REViewer Connection
 #'
 #' Tests if the REViewer VS Code extension is running and accessible.
 #'
-#' @param port Port number for REViewer server (default: 8765)
+#' @param port Port number for REViewer server (default: auto-calculated based on username)
 #'
 #' @return Logical. TRUE if REViewer is accessible, FALSE otherwise.
 #'
@@ -183,10 +276,14 @@ REView <- function(x, name = NULL, port = 8765, include_labels = TRUE) {
 #' }
 #'
 #' @export
-REView_check <- function(port = 8765) {
+REView_check <- function(port = NULL) {
+  if (is.null(port)) {
+    port <- .REView_get_port()
+  }
+  
   if (!requireNamespace("httr", quietly = TRUE)) {
     message("Package 'httr' required. Install with: install.packages('httr')")
-    return(FALSE)
+    return(invisible(FALSE))
   }
 
   url <- paste0("http://localhost:", port, "/health")
@@ -195,13 +292,15 @@ REView_check <- function(port = 8765) {
     response <- httr::GET(url, httr::timeout(2))
     if (httr::status_code(response) == 200) {
       result <- httr::content(response, "parsed")
-      message(sprintf("\u2713 REViewer is running on port %s", result$port))
-      return(TRUE)
+      message(sprintf("\u2713 REViewer is running on port %d", port))
+      return(invisible(TRUE))
     }
-    return(FALSE)
+    message("\u2717 REViewer not responding on port ", port)
+    return(invisible(FALSE))
   }, error = function(e) {
-    message("\u2717 REViewer not accessible")
-    return(FALSE)
+    message("\u2717 REViewer not accessible on port ", port)
+    message("  Run REView_port() to check your configuration")
+    return(invisible(FALSE))
   })
 }
 
@@ -210,10 +309,14 @@ REView_check <- function(port = 8765) {
 #' Prints the R code needed to use REView function.
 #' Useful for quick copy-paste setup.
 #'
-#' @param port Port number for REViewer server (default: 8765)
+#' @param port Port number for REViewer server (default: auto-calculated)
 #'
 #' @export
-REView_code <- function(port = 8765) {
+REView_code <- function(port = NULL) {
+  if (is.null(port)) {
+    port <- .REView_get_port()
+  }
+  
   code <- sprintf('
 # REViewer Quick Setup
 # ====================
@@ -223,32 +326,15 @@ install.packages(c("jsonlite", "httr"))
 
 # 2. Source the REView function:
 # Option A: From GitHub (recommended)
-# source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
+source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/REView_quick.R")
 
-# Option B: Define directly (paste this in R console):
-REView <- function(x, name = NULL, port = %d) {
-  if (!is.data.frame(x)) x <- as.data.frame(x)
-  name <- if (is.null(name)) deparse(substitute(x)) else name
+# 3. Check your assigned port:
+REView_port()  # Note this port number!
 
-  payload <- jsonlite::toJSON(list(
-    name = name,
-    data = x,
-    nrow = nrow(x),
-    ncol = ncol(x),
-    colnames = colnames(x),
-    coltypes = sapply(x, function(col) class(col)[1])
-  ), auto_unbox = TRUE, na = "null")
+# 4. Configure the SAME port in your IDE:
+#    Settings > reviewer.server.port > %d
 
-  tryCatch({
-    httr::POST(paste0("http://localhost:", port, "/review"),
-               body = payload, encode = "json", httr::timeout(5))
-    message("\\u2713 Sent to REViewer: ", name)
-  }, error = function(e) message("\\u2717 REViewer not available"))
-
-  invisible(x)
-}
-
-# 3. Usage:
+# 5. Usage:
 REView(mtcars)
 iris %%>%% dplyr::filter(Sepal.Length > 5) %%>%% REView()
 ', port)
@@ -256,9 +342,3 @@ iris %%>%% dplyr::filter(Sepal.Length > 5) %%>%% REView()
   cat(code)
   invisible(code)
 }
-
-
-
-
-
-

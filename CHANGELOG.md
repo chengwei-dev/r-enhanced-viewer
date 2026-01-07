@@ -45,6 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reviewer_disconnect()` - Disconnect R session
 - `reviewer_status()` - Check connection status
 
+## [0.1.7] - 2025-01-07
+
+### Added
+
+- **Per-User Port Isolation**: Each user now gets a unique port (8700-8799) based on their username. This prevents data cross-contamination when multiple users work on shared servers like Posit Workbench.
+- **REView_port() function**: New helper function to display your assigned port and configuration instructions.
+- **Environment variable override**: Set `REVIEWER_PORT` environment variable to use a custom port.
+- **Posit Workbench documentation**: Added setup guide for Positron / Posit Workbench users.
+
+### Security
+
+- Fixed critical bug where data could be sent to wrong user's viewer on shared server environments.
+
 ## [0.1.6] - 2025-01-04
 
 ### Fixed
