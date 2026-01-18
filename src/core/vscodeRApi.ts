@@ -4,6 +4,9 @@
  */
 
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 import { IDataFrame, IDataFrameMetadata } from './types';
 import { getServerInstance } from './httpServer';
 
@@ -212,10 +215,38 @@ if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
 
   /**
    * Initialize R session with REViewer functions
+   * Writes code to a temp file and sources it to avoid terminal buffer issues
    */
   async initializeRSession(port: number): Promise<void> {
     const code = this.getInitializationCode(port);
-    await this.runInTerminal(code);
+    
+    // Use a short, clean temp file path
+    // On macOS/Linux: /tmp/reviewer_init.R
+    // On Windows: use os.tmpdir()
+    const isWindows = process.platform === 'win32';
+    const tempFile = isWindows 
+      ? path.join(os.tmpdir(), 'reviewer_init.R')
+      : '/tmp/reviewer_init.R';
+    
+    fs.writeFileSync(tempFile, code, 'utf8');
+    
+    // Source the temp file - simple and clear for users
+    const sourcePath = tempFile.replace(/\\/g, '/');
+    await this.runInTerminal(`source("${sourcePath}")`);
+  }
+
+  /**
+   * Write R code to temp file and return file path
+   */
+  private writeCodeToTempFile(code: string, prefix: string): string {
+    const isWindows = process.platform === 'win32';
+    const tempDir = isWindows ? os.tmpdir() : '/tmp';
+    
+    const tempFile = path.join(tempDir, `reviewer_${prefix}.R`);
+    fs.writeFileSync(tempFile, code, 'utf8');
+    
+    // Use forward slashes for R compatibility on all platforms
+    return tempFile.replace(/\\/g, '/');
   }
 
   /**
@@ -241,8 +272,7 @@ if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
       this.pendingRequests.set(requestId, { resolve: resolve as (value: unknown) => void, reject, timeout });
 
       // Run R code that will POST the result back to our server
-      const code = `
-local({
+      const code = `local({
   result <- .REViewer_listDataFrames()
   httr::POST(
     "http://localhost:${port}/callback/${requestId}",
@@ -251,9 +281,10 @@ local({
     httr::content_type_json(),
     httr::timeout(5)
   )
-})
-`;
-      this.runInTerminal(code).catch(reject);
+})`;
+      
+      const tempFile = this.writeCodeToTempFile(code, 'list');
+      this.runInTerminal(`source("${tempFile}")`).catch(reject);
     });
   }
 
@@ -279,8 +310,7 @@ local({
       this.pendingRequests.set(requestId, { resolve: resolve as (value: unknown) => void, reject, timeout });
 
       // Run R code that will POST the result back to our server
-      const code = `
-local({
+      const code = `local({
   result <- .REViewer_getDataFrame("${name}")
   httr::POST(
     "http://localhost:${port}/callback/${requestId}",
@@ -289,9 +319,10 @@ local({
     httr::content_type_json(),
     httr::timeout(30)
   )
-})
-`;
-      this.runInTerminal(code).catch(reject);
+})`;
+      
+      const tempFile = this.writeCodeToTempFile(code, 'get');
+      this.runInTerminal(`source("${tempFile}")`).catch(reject);
     });
   }
 
@@ -326,6 +357,19 @@ local({
     this.pendingRequests.clear();
     this.isInitialized = false;
     this.rApi = undefined;
+    
+    // Clean up temp files
+    try {
+      const isWindows = process.platform === 'win32';
+      const tempFile = isWindows 
+        ? path.join(os.tmpdir(), 'reviewer_init.R')
+        : '/tmp/reviewer_init.R';
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile);
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
   }
 }
 

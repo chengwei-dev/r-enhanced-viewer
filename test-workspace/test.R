@@ -12,6 +12,7 @@ REView(advs)
 
 # Load REViewer functions
 source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
+REView_port()
 
 # Connect R for Command Palette Access
 # source("../r-package/R/reviewer_service.R")

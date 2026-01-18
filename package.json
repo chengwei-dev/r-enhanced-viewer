@@ -2,7 +2,7 @@
   "name": "r-enhanced-viewer",
   "displayName": "R Enhanced Viewer (REViewer)",
   "description": "Enhanced R data frame viewer for statistical programmers. Features quick filtering, multi-column sorting, frequency tables (F), and summary statistics (M).",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "ChengweiLi",
   "license": "MIT",
   "icon": "images/icon.png",

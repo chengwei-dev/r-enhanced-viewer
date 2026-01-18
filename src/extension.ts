@@ -532,10 +532,10 @@ function getConnectionHelpHtml(port: number): string {
   
   <div class="method">
     <h2>Method 2: REView() Function</h2>
-    <p>Directly send a data frame from R to VS Code:</p>
+    <p>Directly send a data frame from R to VS Code / Cursor:</p>
     <pre>
-# Source the REView function (one time)
-source("path/to/r-package/REView_quick.R")
+# Source the REView function from GitHub (one time)
+source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
 
 # View any data frame
 REView(mtcars)
@@ -545,24 +545,32 @@ df %>% REView()
   </div>
   
   <div class="method">
-    <h2>Method 3: Manual HTTP Connection</h2>
-    <p>For advanced users who want to list data frames from command palette:</p>
+    <h2>Method 3: REView() for Posit Workbench / Positron</h2>
+    <p>For users running R on a shared server (e.g., Posit Workbench):</p>
     <pre>
-# Source the service functions
-source("r-package/R/reviewer_service.R")
+# Step 1: Source REView function
+source("https://raw.githubusercontent.com/chengwei-dev/r-enhanced-viewer/main/r-package/R/REView.R")
 
-# Connect to VS Code
-reviewer_connect(port = ${port})
+# Step 2: Check your assigned port (unique per user)
+REView_port()  # e.g., shows 8742
 
-# Now Cmd+Shift+P → "REViewer: View Data Frame"
-# will show a list of available data frames
+# Step 3: Configure same port in Positron settings
+#   Settings > reviewer.server.port > YOUR_PORT
+
+# Step 4: Use REView
+REView(mtcars)
     </pre>
+    <p><em>Each user gets a unique port (8700-8799) based on username to prevent data conflicts.</em></p>
   </div>
   
   <div class="method">
     <h2>Server Status</h2>
     <p>REViewer HTTP server: <strong>port ${port}</strong></p>
     <p>vscode-r extension: ${vscodeRStatus}</p>
+    <p style="margin-top: 10px; font-size: 12px; color: var(--vscode-descriptionForeground);">
+      <strong>Note:</strong> You can change the port in Settings > <code>reviewer.server.port</code><br>
+      For Posit Workbench users: Run <code>REView_port()</code> in R to see your assigned port.
+    </p>
   </div>
 </body>
 </html>`;

@@ -45,6 +45,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reviewer_disconnect()` - Disconnect R session
 - `reviewer_status()` - Check connection status
 
+## [0.1.8] - 2025-01-07
+
+### Fixed
+
+- **Critical: Terminal code injection bug**: Fixed issue where R initialization code was garbled/corrupted when sent to terminal via `sendText()`. Now writes R code to temporary files and uses `source()` command instead, ensuring reliable code execution across all terminal types and platforms.
+
+### Updated
+
+- **Connection Help documentation**: Updated "How to Connect R" panel with correct GitHub source URLs and Posit Workbench setup instructions.
+
 ## [0.1.7] - 2025-01-07
 
 ### Added
