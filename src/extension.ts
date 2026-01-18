@@ -163,7 +163,11 @@ async function initializeRSession(): Promise<boolean> {
     
     return true;
   } catch (error) {
+    const message = (error as Error).message || 'Unknown error';
     console.error('Failed to initialize R session:', error);
+    vscode.window.showErrorMessage(
+      `Failed to initialize R session: ${message}. Make sure the R terminal is started via "R: Create R Terminal".`
+    );
     return false;
   }
 }

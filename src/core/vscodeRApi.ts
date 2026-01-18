@@ -103,6 +103,18 @@ class VscodeRConnection {
       return false;
     }
 
+    // Prefer vscode-r API session status if available
+    if (this.rApi.isRSessionActive) {
+      try {
+        const active = this.rApi.isRSessionActive();
+        if (active) {
+          return true;
+        }
+      } catch {
+        // Fall back to terminal detection
+      }
+    }
+
     // Check if there's an active R terminal
     const rTerminal = this.findRTerminal();
     return rTerminal !== undefined;
@@ -119,8 +131,10 @@ class VscodeRConnection {
 
     // Fall back to searching terminals by name
     return vscode.window.terminals.find(t => 
-      t.name.toLowerCase().includes('r') || 
-      t.name === 'R Interactive' ||
+      t.name.toLowerCase().includes('r terminal') ||
+      t.name.toLowerCase().includes('rterm') ||
+      t.name.toLowerCase().includes('r interactive') ||
+      t.name.toLowerCase().includes('radian') ||
       t.name === 'R' ||
       t.name.startsWith('R:')
     );
@@ -143,7 +157,13 @@ class VscodeRConnection {
     // Fall back to sending text to terminal directly
     const terminal = this.findRTerminal();
     if (!terminal) {
-      throw new Error('No R terminal found. Please start an R session first.');
+      // Try vscode command as a last resort (some builds only expose commands)
+      try {
+        await vscode.commands.executeCommand('r.runTextInTerm', code);
+        return;
+      } catch {
+        throw new Error('No R terminal found. Please start an R session first.');
+      }
     }
 
     terminal.sendText(code);

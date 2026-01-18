@@ -45,6 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reviewer_disconnect()` - Disconnect R session
 - `reviewer_status()` - Check connection status
 
+## [0.1.9] - 2025-01-07
+
+### Fixed
+
+- **Windows R initialization not triggering**: Improved R session detection and command dispatch to avoid silent failures on Windows (fallback to vscode-r command and better terminal matching).
+- **Clearer error feedback**: Show user-facing error message when R session initialization fails instead of silently doing nothing.
+
 ## [0.1.8] - 2025-01-07
 
 ### Fixed
