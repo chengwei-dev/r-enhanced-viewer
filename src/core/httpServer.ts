@@ -16,9 +16,11 @@ interface RViewData {
   name: string;
   data: Record<string, unknown[]>;
   nrow: number;
+  totalRows?: number;
   ncol: number;
   colnames: string[];
   coltypes: string[] | Record<string, string>;
+  hasMore?: boolean;
   labels?: Record<string, string>;
 }
 
@@ -568,9 +570,12 @@ export class REViewerServer {
       name: rData.name,
       columns: columns,
       rows: rows,
-      totalRows: rData.nrow,
+      totalRows: typeof rData.totalRows === 'number' ? rData.totalRows : rData.nrow,
       totalColumns: rData.ncol,
-      hasMore: false,
+      hasMore:
+        typeof rData.hasMore === 'boolean'
+          ? rData.hasMore
+          : (typeof rData.totalRows === 'number' ? rData.totalRows : rData.nrow) > rData.nrow,
       fetchedAt: Date.now(),
     };
   }
