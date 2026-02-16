@@ -5,6 +5,20 @@ All notable changes to the R Enhanced Viewer (REViewer) extension will be docume
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] - 2026-01-24
+
+### Fixed
+
+- **Large data loading stalls**: Improved command-to-viewer responsiveness for large ADaM-style datasets by reducing expensive render and search work in the webview.
+- **Cmd+F UI freezing on wide datasets**: Added debounce and capped search match scanning to prevent lock-ups during interactive search.
+- **Repeated load duplication**: Added viewer-panel load de-duplication to avoid overlapping fetch and render cycles.
+
+### Changed
+
+- **Large REView payload handling**: `REView()` now sends preview rows for very large data frames while preserving `totalRows` and `hasMore` metadata.
+- **Render cap for responsiveness**: Viewer limits rendered rows for speed and shows status feedback when display is capped.
+- **Cache behavior refinement**: Updated full-frame cache hit logic to avoid unnecessary refetches.
+
 ## [0.1.0] - 2025-12-17
 
 ### Added
