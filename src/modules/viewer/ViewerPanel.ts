@@ -22,6 +22,9 @@ export class ViewerPanel {
   private disposables: vscode.Disposable[] = [];
   private pendingData: IDataFrame | null = null;
   private hasReceivedData: boolean = false;  // Track if data was received via HTTP
+  private hasRequestedInitialLoad: boolean = false;
+  private loadInFlight: Promise<void> | null = null;
+  private readonly maxRenderRows: number;
 
   /**
    * Create or show viewer panel for a data frame
@@ -125,6 +128,13 @@ export class ViewerPanel {
     this.dataFrameName = dataFrameName;
     this.pendingData = initialData || null;
     this.hasReceivedData = !!initialData;  // Mark if we received data via HTTP
+    this.maxRenderRows = Math.max(
+      500,
+      Math.min(
+        vscode.workspace.getConfiguration('reviewer').get<number>('viewer.maxRowsInitialLoad', 10000),
+        5000
+      )
+    );
 
     // Set up the webview content
     this.panel.webview.html = this.getHtmlContent();
@@ -145,8 +155,9 @@ export class ViewerPanel {
         if (e.webviewPanel.visible) {
           // Panel became visible, only load data if we don't have pending data
           // and didn't receive data via HTTP
-          if (!this.pendingData && !this.hasReceivedData) {
-            this.loadData();
+          if (!this.pendingData && !this.hasReceivedData && !this.hasRequestedInitialLoad) {
+            this.hasRequestedInitialLoad = true;
+            void this.loadData();
           }
         }
       },
@@ -156,7 +167,8 @@ export class ViewerPanel {
 
     // Initial data load (if we have pending data, it will be sent when webview is ready)
     if (!this.pendingData) {
-      this.loadData();
+      this.hasRequestedInitialLoad = true;
+      void this.loadData();
     }
   }
 
@@ -207,16 +219,34 @@ export class ViewerPanel {
    * Load data from R
    */
   private async loadData(forceRefresh = false): Promise<void> {
-    try {
-      const data = forceRefresh
-        ? await dataProvider.refreshData(this.dataFrameName)
-        : await dataProvider.getData(this.dataFrameName);
+    if (this.loadInFlight) {
+      if (!forceRefresh) {
+        return this.loadInFlight;
+      }
+      await this.loadInFlight;
+    }
 
-      this.updateData(data);
-    } catch (error) {
-      vscode.window.showErrorMessage(
-        `Failed to load data frame "${this.dataFrameName}": ${(error as Error).message}`
-      );
+    const loadPromise = (async () => {
+      try {
+        const data = forceRefresh
+          ? await dataProvider.refreshData(this.dataFrameName)
+          : await dataProvider.getData(this.dataFrameName);
+
+        this.updateData(data);
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Failed to load data frame "${this.dataFrameName}": ${(error as Error).message}`
+        );
+      }
+    })();
+
+    this.loadInFlight = loadPromise;
+    try {
+      await loadPromise;
+    } finally {
+      if (this.loadInFlight === loadPromise) {
+        this.loadInFlight = null;
+      }
     }
   }
 
@@ -234,9 +264,10 @@ export class ViewerPanel {
           this.updateData(this.pendingData);
           this.pendingData = null;
           // hasReceivedData stays true, so we won't call loadData later
-        } else if (!this.hasReceivedData) {
+        } else if (!this.hasReceivedData && !this.hasRequestedInitialLoad) {
           // Only load from dataProvider if we didn't receive data via HTTP
           console.log(`[ViewerPanel] No pending data and not received via HTTP, calling loadData()`);
+          this.hasRequestedInitialLoad = true;
           await this.loadData();
         } else {
           console.log(`[ViewerPanel] No pending data but hasReceivedData is true, skipping loadData()`);
@@ -966,6 +997,9 @@ export class ViewerPanel {
     <script nonce="${nonce}">
       (function() {
         const vscode = acquireVsCodeApi();
+        const MAX_RENDER_ROWS = ${this.maxRenderRows};
+        const SEARCH_DEBOUNCE_MS = 120;
+        const MAX_SEARCH_MATCHES = 2000;
         let currentData = null;
         let originalColumns = [];  // Store original columns for variable selector
         let originalRows = [];     // Store original rows for variable selector
@@ -1025,6 +1059,26 @@ export class ViewerPanel {
         // Jump dialog elements
         const jumpDialog = document.getElementById('jump-dialog');
         const jumpInput = document.getElementById('jump-input');
+        let searchTimer = null;
+
+        function applyIncomingData(data) {
+          currentData = data;
+          // Preserve full list for variable selector without expensive deep clone.
+          originalColumns = currentData.columns.map((col, idx) => ({ ...col, index: idx }));
+          originalRows = currentData.rows;
+          filteredRows = null;
+          sortState = { columns: [] };  // Reset sort on new data
+          quickFilterState = { enabled: false, filters: [], logic: 'AND' };
+          selectedCell = null;
+          selectedCells = [];
+          // Initialize variable selection with all columns
+          selectedVariables = originalColumns.map(c => c.name);
+          variableOrder = [...selectedVariables];
+          titleEl.textContent = '📊 ' + currentData.name;
+          renderFilterChips();
+          renderTable(currentData);
+          updateStatus();
+        }
 
         // Render table
         function renderTable(data) {
@@ -1034,6 +1088,7 @@ export class ViewerPanel {
           }
 
           const rows = filteredRows || data.rows;
+          const rowsToRender = rows.slice(0, MAX_RENDER_ROWS);
           
           let html = '<table><thead><tr><th class="row-num">#</th>';
           data.columns.forEach((col, colIdx) => {
@@ -1055,7 +1110,7 @@ export class ViewerPanel {
           });
           html += '</tr></thead><tbody>';
 
-          rows.forEach((row, idx) => {
+          rowsToRender.forEach((row, idx) => {
             html += '<tr><td class="row-num">' + (idx + 1) + '</td>';
             data.columns.forEach((col, colIdx) => {
               const value = Array.isArray(row) ? row[colIdx] : row[col.name];
@@ -1362,9 +1417,9 @@ export class ViewerPanel {
           const query = e.target.value.toLowerCase();
           
           // Start with original or quick-filtered data
-          let baseRows = currentData.rows;
+          let baseRows = currentData.rows.slice(0, MAX_RENDER_ROWS);
           if (quickFilterState.enabled && quickFilterState.filters.length > 0) {
-            baseRows = currentData.rows.filter(row => {
+            baseRows = baseRows.filter(row => {
               if (quickFilterState.logic === 'AND') {
                 return quickFilterState.filters.every(filter => matchesFilter(row, filter));
               } else {
@@ -1419,8 +1474,13 @@ export class ViewerPanel {
         function updateStatus() {
           if (!currentData) return;
           const total = currentData.totalRows;
-          const shown = filteredRows ? filteredRows.length : currentData.rows.length;
-          let statusText = 'Rows: ' + shown + (filteredRows ? ' / ' + total : '') + ' | Columns: ' + currentData.totalColumns;
+          const activeRows = filteredRows ? filteredRows : currentData.rows;
+          const shown = activeRows.length;
+          const rendered = Math.min(shown, MAX_RENDER_ROWS);
+          let statusText = 'Rows: ' + rendered + (shown !== rendered ? ' / ' + shown : '') + (filteredRows ? ' (filtered)' : '') + ' | Columns: ' + currentData.totalColumns;
+          if (shown > MAX_RENDER_ROWS) {
+            statusText += ' | Display capped at ' + MAX_RENDER_ROWS + ' rows for speed';
+          }
           
           // Show multi-select info
           if (selectedCells.length > 1) {
@@ -1933,21 +1993,32 @@ export class ViewerPanel {
             return;
           }
           
-          const rows = filteredRows || currentData.rows;
+          const rows = (filteredRows || currentData.rows).slice(0, MAX_RENDER_ROWS);
           const lowerQuery = query.toLowerCase();
           
-          rows.forEach((row, rowIdx) => {
-            currentData.columns.forEach((col, colIdx) => {
+          outerLoop:
+          for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+            const row = rows[rowIdx];
+            for (let colIdx = 0; colIdx < currentData.columns.length; colIdx++) {
+              const col = currentData.columns[colIdx];
               const value = Array.isArray(row) ? row[colIdx] : row[col.name];
               if (value !== null && value !== undefined) {
                 if (String(value).toLowerCase().includes(lowerQuery)) {
                   searchMatches.push({ rowIndex: rowIdx, columnIndex: colIdx });
+                  if (searchMatches.length >= MAX_SEARCH_MATCHES) {
+                    break outerLoop;
+                  }
                 }
               }
-            });
-          });
+            }
+          }
           
-          searchDialogCount.textContent = searchMatches.length + ' match' + (searchMatches.length !== 1 ? 'es' : '');
+          const capped = searchMatches.length >= MAX_SEARCH_MATCHES;
+          searchDialogCount.textContent =
+            searchMatches.length +
+            (capped ? '+' : '') +
+            ' match' +
+            (searchMatches.length !== 1 ? 'es' : '');
           
           if (searchMatches.length > 0) {
             currentMatchIndex = 0;
@@ -1998,7 +2069,14 @@ export class ViewerPanel {
         
         // Search dialog event handlers
         searchDialogInput.addEventListener('input', function() {
-          performSearch(this.value);
+          const value = this.value;
+          if (searchTimer) {
+            clearTimeout(searchTimer);
+          }
+          searchTimer = setTimeout(function() {
+            performSearch(value);
+            searchTimer = null;
+          }, SEARCH_DEBOUNCE_MS);
         });
         
         searchDialogInput.addEventListener('keydown', function(e) {
@@ -2121,22 +2199,7 @@ export class ViewerPanel {
               console.log('[Webview] setData payload:', JSON.stringify(message.payload, null, 2).substring(0, 500));
               console.log('[Webview] columns:', message.payload.columns);
               console.log('[Webview] rows sample:', message.payload.rows ? message.payload.rows.slice(0, 2) : 'no rows');
-              currentData = message.payload;
-              // Store original columns/rows for variable selector (preserve full list)
-              originalColumns = JSON.parse(JSON.stringify(currentData.columns));
-              originalRows = JSON.parse(JSON.stringify(currentData.rows));
-              filteredRows = null;
-              sortState = { columns: [] };  // Reset sort on new data
-              quickFilterState = { enabled: false, filters: [], logic: 'AND' };
-              selectedCell = null;
-              selectedCells = [];
-              // Initialize variable selection with all columns
-              selectedVariables = originalColumns.map(c => c.name);
-              variableOrder = [...selectedVariables];
-              titleEl.textContent = '📊 ' + currentData.name;
-              renderFilterChips();
-              renderTable(currentData);
-              updateStatus();
+              applyIncomingData(message.payload);
               break;
             case 'setTheme':
               // Could handle theme changes here

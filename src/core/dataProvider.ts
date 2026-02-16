@@ -99,12 +99,21 @@ class DataProvider {
       useCache?: boolean;
     } = {}
   ): Promise<IDataFrame> {
-    const { offset = 0, limit = this.maxRowsPerRequest, columns, useCache = true } = options;
+    const { offset = 0, columns, useCache = true } = options;
 
-    // Check cache first
+    // Check cache first for full-frame requests.
+    // Do not gate on `limit` here because `rSession.getData()` currently fetches
+    // the full data frame in HTTP mode; a strict limit check can cause unnecessary refetches.
     if (useCache) {
       const cached = this.getCached(name);
-      if (cached && !columns && offset === 0 && limit >= cached.totalRows) {
+      const isFullFrameRequest = !columns && offset === 0;
+      const hasValidCachedShape =
+        !!cached &&
+        Array.isArray(cached.columns) &&
+        Array.isArray(cached.rows) &&
+        typeof cached.totalRows === 'number';
+
+      if (isFullFrameRequest && hasValidCachedShape) {
         return cached;
       }
     }

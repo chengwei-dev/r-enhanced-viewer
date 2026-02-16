@@ -176,8 +176,9 @@ class VscodeRConnection {
   getInitializationCode(port: number): string {
     return `
 # REViewer initialization (auto-injected)
-if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
+if (!exists(".REViewer_init_version", envir = .GlobalEnv) || .REViewer_init_version < 2) {
   .REViewer_port <<- ${port}
+  .REViewer_max_rows <<- 10000
   
   # REView function to send data to VS Code
   REView <<- function(x, name = NULL) {
@@ -192,9 +193,17 @@ if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
     
     var_name <- if (!is.null(name)) name else deparse(substitute(x))
     if (!is.data.frame(x)) x <- as.data.frame(x)
+    total_rows <- nrow(x)
+    if (is.null(total_rows) || is.na(total_rows)) total_rows <- 0
+    preview_rows <- min(total_rows, .REViewer_max_rows)
+    x_preview <- if (total_rows > preview_rows) {
+      x[seq_len(preview_rows), , drop = FALSE]
+    } else {
+      x
+    }
     
     # Get column types
-    col_types <- sapply(x, function(col) {
+    col_types <- sapply(x_preview, function(col) {
       cls <- class(col)[1]
       if (cls %in% c("numeric", "integer")) "numeric"
       else if (cls %in% c("factor", "character")) "character"
@@ -205,10 +214,12 @@ if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
     
     json_data <- jsonlite::toJSON(list(
       name = var_name,
-      data = as.list(x),
-      nrow = nrow(x),
-      ncol = ncol(x),
-      colnames = colnames(x),
+      data = as.list(x_preview),
+      nrow = nrow(x_preview),
+      totalRows = total_rows,
+      ncol = ncol(x_preview),
+      colnames = colnames(x_preview),
+      hasMore = total_rows > preview_rows,
       coltypes = col_types
     ), auto_unbox = TRUE, null = "null", na = "null")
     
@@ -220,7 +231,14 @@ if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
         httr::content_type_json(),
         httr::timeout(5)
       )
-      message("\\u2713 REViewer: ", var_name, " (", nrow(x), " \\u00d7 ", ncol(x), ")")
+      if (total_rows > preview_rows) {
+        message(
+          "\\u2713 REViewer: ", var_name, " (showing ", preview_rows, " of ", total_rows,
+          " rows \\u00d7 ", ncol(x_preview), " cols)"
+        )
+      } else {
+        message("\\u2713 REViewer: ", var_name, " (", total_rows, " \\u00d7 ", ncol(x_preview), ")")
+      }
     }, error = function(e) {
       message("\\u2717 REViewer not available: ", e$message)
     })
@@ -228,6 +246,7 @@ if (!exists(".REViewer_initialized", envir = .GlobalEnv)) {
   }
   
   .REViewer_initialized <<- TRUE
+  .REViewer_init_version <<- 2
   message("\\u2713 REViewer ready. Use REView(df) to view data frames.")
 }
 `;
