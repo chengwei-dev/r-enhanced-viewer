@@ -59,14 +59,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `reviewer_disconnect()` - Disconnect R session
 - `reviewer_status()` - Check connection status
 
-## [0.1.9] - 2025-01-07
+## [0.1.9] - 2026-01-07
 
 ### Fixed
 
 - **Windows R initialization not triggering**: Improved R session detection and command dispatch to avoid silent failures on Windows (fallback to vscode-r command and better terminal matching).
 - **Clearer error feedback**: Show user-facing error message when R session initialization fails instead of silently doing nothing.
 
-## [0.1.8] - 2025-01-07
+## [0.1.8] - 2026-01-07
 
 ### Fixed
 
@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Connection Help documentation**: Updated "How to Connect R" panel with correct GitHub source URLs and Posit Workbench setup instructions.
 
-## [0.1.7] - 2025-01-07
+## [0.1.7] - 2026-01-07
 
 ### Added
 
@@ -89,14 +89,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed critical bug where data could be sent to wrong user's viewer on shared server environments.
 
-## [0.1.6] - 2025-01-04
+## [0.1.6] - 2026-01-04
 
 ### Fixed
 
 - **Variable Selector now shows all columns**: Previously, after applying a selection, reopening the Variable Selector only showed selected columns. Now it always shows all original columns, with selected columns at the top (checked) and unselected columns below (unchecked). Users can easily add back previously deselected columns.
 - **Keyboard shortcuts disabled when typing in input fields**: Pressing E/F/M/I keys while typing in search boxes or dialogs no longer triggers quick filter or frequency shortcuts. Escape key and Ctrl/Cmd combos still work as expected.
 
-## [0.1.5] - 2025-01-04
+## [0.1.5] - 2026-01-04
 
 ### Added
 
